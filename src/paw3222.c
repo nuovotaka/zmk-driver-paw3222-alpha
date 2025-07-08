@@ -253,7 +253,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
                 data->scroll_layer_index++;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                struct layer_state_changed_event *ev = new_layer_state_changed_event(new_layer);
+                // レイヤーを有効化（activate）する場合
+                struct layer_state_changed *ev = create_layer_state_changed(new_layer, true);
                 ZMK_EVENT_RAISE(ev);
             }
             data->scroll_layer_accum = 0;
@@ -261,7 +262,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             if (data->scroll_layer_index > 0) {
                 data->scroll_layer_index--;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                struct layer_state_changed_event *ev = new_layer_state_changed_event(new_layer);
+                // レイヤーを無効化（deactivate）する場合
+                struct layer_state_changed *ev = create_layer_state_changed(new_layer, false);
                 ZMK_EVENT_RAISE(ev);
             }
             data->scroll_layer_accum = 0;
