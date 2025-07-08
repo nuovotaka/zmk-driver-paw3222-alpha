@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zephyr/zephyr.h>
+#include <zephyr/kernel.h>
 
 /**
  * @brief ZMK イベントヘッダ
