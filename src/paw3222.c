@@ -22,8 +22,6 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/sys/util.h>
 
-#include <zmk/event_manager.h>
-
 #include "../include/events/layer_state_changed.h"
 #include "../include/paw3222.h"
 
