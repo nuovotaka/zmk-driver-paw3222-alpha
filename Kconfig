@@ -1,0 +1,6 @@
+
+menuconfig PAW3222
+    bool "PAW3222 mouse optical sensor"
+  select SPI
+    help
+      Enable PAW3222 mouse optical sensor.

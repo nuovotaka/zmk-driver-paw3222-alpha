@@ -1,0 +1,34 @@
+# Copyright 2024 Google LLC
+# Copyright 2025 sekigon-gonnoc
+# Copyright 2025 nuovotaka
+# SPDX-License-Identifier: Apache-2.0
+
+description: PAW32xx ultra low power wireless mouse chip
+
+compatible: "pixart,paw3222"
+
+include: spi-device.yaml
+
+properties:
+  irq-gpios:
+    type: phandle-array
+    required: true
+    description: GPIO connected to the motion pin, active low.
+
+  power-gpios:
+    type: phandle-array
+    required: false
+    description: GPIO connected to the power control pin.
+
+  res-cpi:
+    type: int
+    description: |
+      CPI resolution for the sensor. This can also be changed in runtime using
+      the paw32xx_set_resolution() API.
+
+  force-awake:
+    type: boolean
+    description: |
+      Initialize the sensor in "force awake" mode. This can also be enabled or
+      disabled in runtime by the application using the paw32xx_force_awake()
+      API.
