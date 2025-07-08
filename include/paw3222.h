@@ -10,6 +10,8 @@
 #ifndef ZEPHYR_INCLUDE_INPUT_PAW32XX_H_
 #define ZEPHYR_INCLUDE_INPUT_PAW32XX_H_
 
+#define INPUT_EVENT_SCROLL_LAYER_CHANGED 0x1000
+
 /**
  * @brief Set resolution on a paw32xx device
  *

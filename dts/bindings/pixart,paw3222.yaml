@@ -20,6 +20,12 @@ properties:
     required: false
     description: GPIO connected to the power control pin.
 
+  scroll-layers:
+    type: array
+    required: false
+    description: |
+      List of layer numbers to switch between using the scroll-layers feature.
+
   res-cpi:
     type: int
     description: |
