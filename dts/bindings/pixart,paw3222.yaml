@@ -20,7 +20,7 @@ properties:
     required: false
     description: GPIO connected to the power control pin.
 
-  scroll_layers:
+  scroll-layers:
     type: array
     required: false
     description: |
