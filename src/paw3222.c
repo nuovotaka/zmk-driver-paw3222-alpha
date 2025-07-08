@@ -22,6 +22,9 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/sys/util.h>
 
+#include <zmk/event_manager.h>
+#include <zmk/events/layer_state_changed.h>
+
 #include "../include/paw3222.h"
 
 LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
@@ -248,19 +251,18 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
                 data->scroll_layer_index++;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                // Zephyr input_event で通知
-                input_report_abs(data->dev, INPUT_EVENT_SCROLL_LAYER_CHANGED, new_layer, true, K_NO_WAIT);
+                ZMK_EVENT_RAISE(new_layer_state_changed_event(new_layer));
             }
             data->scroll_layer_accum = 0;
         } else if (data->scroll_layer_accum < -SCROLL_LAYER_THRESHOLD) {
             if (data->scroll_layer_index > 0) {
                 data->scroll_layer_index--;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                input_report_abs(data->dev, INPUT_EVENT_SCROLL_LAYER_CHANGED, new_layer, true, K_NO_WAIT);
+                ZMK_EVENT_RAISE(new_layer_state_changed_event(new_layer));
             }
             data->scroll_layer_accum = 0;
         }
-    }
+}
     // --- scroll-layers 機能ここまで ---
 
     input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
