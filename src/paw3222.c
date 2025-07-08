@@ -253,18 +253,20 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
                 data->scroll_layer_index++;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                ZMK_EVENT_RAISE(new_layer_state_changed_event(new_layer));
+                struct layer_state_changed_event *ev = new_layer_state_changed_event(new_layer);
+                ZMK_EVENT_RAISE(ev);
             }
             data->scroll_layer_accum = 0;
         } else if (data->scroll_layer_accum < -SCROLL_LAYER_THRESHOLD) {
             if (data->scroll_layer_index > 0) {
                 data->scroll_layer_index--;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                ZMK_EVENT_RAISE(new_layer_state_changed_event(new_layer));
+                struct layer_state_changed_event *ev = new_layer_state_changed_event(new_layer);
+                ZMK_EVENT_RAISE(ev);
             }
             data->scroll_layer_accum = 0;
         }
-}
+    }
     // --- scroll-layers 機能ここまで ---
 
     input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
