@@ -544,5 +544,3 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
 DT_INST_FOREACH_STATUS_OKAY(PAW32XX_INIT)
 
 #endif // DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
-
-ZMK_EVENT_IMPL(layer_state_changed);
