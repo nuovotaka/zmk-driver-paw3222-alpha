@@ -73,6 +73,9 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 
 #define SCROLL_LAYER_THRESHOLD 10
 
+
+ZMK_EVENT_IMPL(layer_state_changed);
+
 struct paw32xx_config {
     struct spi_dt_spec spi;
     struct gpio_dt_spec irq_gpio;
@@ -253,18 +256,16 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
                 data->scroll_layer_index++;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                // レイヤーを有効化（activate）する場合
                 struct layer_state_changed *ev = create_layer_state_changed(new_layer, true);
-                ZMK_EVENT_RAISE(ev);
+                ZMK_EVENT_RAISE(*ev);
             }
             data->scroll_layer_accum = 0;
         } else if (data->scroll_layer_accum < -SCROLL_LAYER_THRESHOLD) {
             if (data->scroll_layer_index > 0) {
                 data->scroll_layer_index--;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                // レイヤーを無効化（deactivate）する場合
-                struct layer_state_changed *ev = create_layer_state_changed(new_layer, false);
-                ZMK_EVENT_RAISE(ev);
+                struct layer_state_changed *ev = create_layer_state_changed(new_layer, true);
+                ZMK_EVENT_RAISE(*ev);
             }
             data->scroll_layer_accum = 0;
         }
