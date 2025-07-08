@@ -20,6 +20,10 @@ properties:
     required: false
     description: GPIO connected to the power control pin.
 
+  scroll-layers:
+    type: array
+    default: []
+
   res-cpi:
     type: int
     description: |
