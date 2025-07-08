@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../events/event_manager.h"
 #include <zephyr/kernel.h>
-#include <zmk/event_manager.h>
 
 struct layer_state_changed {
     struct zmk_event_header header;
