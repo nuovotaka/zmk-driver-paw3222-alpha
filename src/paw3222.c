@@ -8,6 +8,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#pragma once
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -23,7 +24,8 @@
 #include <zephyr/sys/util.h>
 
 #include <zmk/event_manager.h>
-#include <zmk/events/layer_state_changed.h>
+#include <zephyr.h>
+#include <zmk/event_manager.h>
 
 #include "../include/paw3222.h"
 
@@ -72,6 +74,35 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MAX (127 * RES_STEP)
 
 #define SCROLL_LAYER_THRESHOLD 10
+
+
+/**
+ * @brief Event type for when a layer is activated or deactivated.
+ */
+struct layer_state_changed {
+    struct zmk_event_header header;
+    uint8_t layer;      // 変更があったレイヤー番号
+    bool state;         // true = 有効化 / false = 無効化
+    int64_t timestamp;  // k_uptime_get() によるミリ秒単位のタイムスタンプ
+};
+
+// イベントの宣言（リスナー登録用）
+ZMK_EVENT_DECLARE(layer_state_changed);
+
+/**
+ * @brief layer_state_changed イベント構造体を作成するヘルパー関数
+ *
+ * @param layer レイヤー番号
+ * @param state 有効化(true)または無効化(false)
+ * @return 構築済みの layer_state_changed イベントポインタ
+ */
+static inline struct layer_state_changed *create_layer_state_changed(uint8_t layer, bool state) {
+    struct layer_state_changed *ev = new_layer_state_changed();
+    ev->layer = layer;
+    ev->state = state;
+    ev->timestamp = k_uptime_get();
+    return ev;
+}
 
 
 struct paw32xx_config {
@@ -255,7 +286,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
                 data->scroll_layer_index++;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
                 struct layer_state_changed *ev = create_layer_state_changed(new_layer, true);
-                ZMK_EVENT_RAISE(ev);
+                ZMK_EVENT_RAISE(*ev);
             }
             data->scroll_layer_accum = 0;
         } else if (data->scroll_layer_accum < -SCROLL_LAYER_THRESHOLD) {
@@ -263,7 +294,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
                 data->scroll_layer_index--;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
                 struct layer_state_changed *ev = create_layer_state_changed(new_layer, true);
-                ZMK_EVENT_RAISE(ev);
+                ZMK_EVENT_RAISE(*ev);
             }
             data->scroll_layer_accum = 0;
         }
