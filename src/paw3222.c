@@ -22,7 +22,9 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/sys/util.h>
 
-#include "../include/events/layer_state_changed.h"
+#include <zmk/event_manager.h>
+#include <zmk/events/layer_state_changed.h>
+
 #include "../include/paw3222.h"
 
 LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
