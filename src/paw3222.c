@@ -254,16 +254,22 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
                 data->scroll_layer_index++;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                struct layer_state_changed *ev = create_layer_state_changed(new_layer, true);
-                ZMK_EVENT_RAISE(*ev);
+                struct layer_state_changed ev = {
+                    .layer = new_layer,
+                    .state = true,
+                };
+                ZMK_EVENT_RAISE(ev);
             }
             data->scroll_layer_accum = 0;
         } else if (data->scroll_layer_accum < -SCROLL_LAYER_THRESHOLD) {
             if (data->scroll_layer_index > 0) {
                 data->scroll_layer_index--;
                 int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                struct layer_state_changed *ev = create_layer_state_changed(new_layer, true);
-                ZMK_EVENT_RAISE(*ev);
+                struct layer_state_changed ev = {
+                    .layer = new_layer,
+                    .state = true,
+                };
+                ZMK_EVENT_RAISE(ev);
             }
             data->scroll_layer_accum = 0;
         }
