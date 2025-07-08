@@ -68,6 +68,8 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MIN (16 * RES_STEP)
 #define RES_MAX (127 * RES_STEP)
 
+#define SCROLL_LAYER_THRESHOLD 10
+
 struct paw32xx_config {
     struct spi_dt_spec spi;
     struct gpio_dt_spec irq_gpio;
@@ -81,6 +83,8 @@ struct paw32xx_data {
     struct k_work motion_work;
     struct gpio_callback motion_cb;
     struct k_timer motion_timer; // Add timer for delayed motion checking
+    int scroll_layer_index;
+    int scroll_layer_accum;
 };
 
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
@@ -237,6 +241,28 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
 
     LOG_DBG("x=%4d y=%4d", x, y);
 
+    // --- scroll-layers 機能ここから ---
+    if (cfg->scroll_layers_len > 0) {
+        data->scroll_layer_accum += y;
+        if (data->scroll_layer_accum > SCROLL_LAYER_THRESHOLD) {
+            if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
+                data->scroll_layer_index++;
+                int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
+                // Zephyr input_event で通知
+                input_report_abs(data->dev, INPUT_EVENT_SCROLL_LAYER_CHANGED, new_layer, true, K_NO_WAIT);
+            }
+            data->scroll_layer_accum = 0;
+        } else if (data->scroll_layer_accum < -SCROLL_LAYER_THRESHOLD) {
+            if (data->scroll_layer_index > 0) {
+                data->scroll_layer_index--;
+                int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
+                input_report_abs(data->dev, INPUT_EVENT_SCROLL_LAYER_CHANGED, new_layer, true, K_NO_WAIT);
+            }
+            data->scroll_layer_accum = 0;
+        }
+    }
+    // --- scroll-layers 機能ここまで ---
+
     input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
     input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
 
@@ -351,6 +377,9 @@ static int paw32xx_init(const struct device *dev) {
     const struct paw32xx_config *cfg = dev->config;
     struct paw32xx_data *data = dev->data;
     int ret;
+
+    data->scroll_layer_index = 0;
+    data->scroll_layer_accum = 0;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
