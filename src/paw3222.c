@@ -74,8 +74,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define SCROLL_LAYER_THRESHOLD 10
 
 
-ZMK_EVENT_IMPL(layer_state_changed);
-
 struct paw32xx_config {
     struct spi_dt_spec spi;
     struct gpio_dt_spec irq_gpio;
@@ -548,3 +546,5 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
 DT_INST_FOREACH_STATUS_OKAY(PAW32XX_INIT)
 
 #endif // DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
+
+ZMK_EVENT_IMPL(layer_state_changed);
