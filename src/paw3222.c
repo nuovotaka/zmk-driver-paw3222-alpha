@@ -250,6 +250,9 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     // --- scroll-layers 機能ここから ---
     if (cfg->scroll_layers_len > 0) {
         data->scroll_layer_accum += y;
+        
+        LOG_INF("scroll_layer_index=%d y=%d accum=%d", data->scroll_layer_index, y, data->scroll_layer_accum);
+
         if (data->scroll_layer_accum > SCROLL_LAYER_THRESHOLD) {
             if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
                 data->scroll_layer_index++;
