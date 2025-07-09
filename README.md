@@ -65,6 +65,9 @@ Configure in your shield or board config file (.overlay or .dtsi):
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        /*   optional features   */
+        // scroll-layers = <4>;
     };
 };
 ```
@@ -90,7 +93,7 @@ endif
 - `irq-gpios`: GPIO connected to the motion pin (required)
 - `res-cpi`: CPI resolution for the sensor (optional)
 - `force-awake`: Initialize the sensor in "force awake" mode (optional, boolean)
-- `scroll_layers`: (optional)
+- `scroll-layers`: The number to which the scroll layer is applied(optional)
 
 ---
 
@@ -162,6 +165,9 @@ manifest:
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        /*   optional features   */
+        // scroll-layers = <4>;
     };
 };
 ```
@@ -187,4 +193,4 @@ endif
 - `irq-gpios`: モーションピンに接続された GPIO（必須）
 - `res-cpi`: センサーの CPI 解像度（任意）
 - `force-awake`: センサーを「強制起動」モードで初期化（任意、ブール値）
-- `scroll_layers`: (任意)
+- `scroll-layers`: スクロールレイヤーを適用させる番号(任意)
