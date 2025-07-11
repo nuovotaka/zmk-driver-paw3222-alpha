@@ -211,7 +211,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     return PAW32XX_MOVE;
 }
 
-static int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
+int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
     uint8_t val;
     int ret;
 
