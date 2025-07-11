@@ -77,31 +77,6 @@ enum paw32xx_input_mode {
     PAW32XX_SNIPE,
 };
 
-struct paw32xx_config {
-    struct spi_dt_spec spi;
-    struct gpio_dt_spec irq_gpio;
-    struct gpio_dt_spec power_gpio;
-    size_t scroll_layers_len;
-    int32_t *scroll_layers;
-    size_t snipe_layers_len;
-    int32_t *snipe_layers;
-    int16_t res_cpi;
-    int16_t snipe_cpi;
-    bool force_awake;
-};
-
-struct paw32xx_data {
-    const struct device *dev;
-    struct k_work motion_work;
-    struct gpio_callback motion_cb;
-    struct k_timer motion_timer;
-    int16_t last_x;
-    int16_t last_y;
-    int16_t scroll_delta_x;
-    int16_t scroll_delta_y;
-    int16_t current_cpi;
-};
-
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
     uint8_t shift = 31 - index;
