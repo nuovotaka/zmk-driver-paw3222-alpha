@@ -295,18 +295,18 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             data->scroll_delta_y = 0;
             break;
         case PAW32XX_SCROLL:
-            data->scroll_delta_x += x;
+            // data->scroll_delta_x += x;
             data->scroll_delta_y += y;
             if (abs(data->scroll_delta_y) > SCROLL_TICK) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL,
                     data->scroll_delta_y > 0 ? 1 : -1, true, K_FOREVER);
                 data->scroll_delta_y = 0;
             }
-            if (abs(data->scroll_delta_x) > SCROLL_TICK) {
-                input_report_rel(data->dev, INPUT_REL_HWHEEL,
-                    data->scroll_delta_x > 0 ? 1 : -1, true, K_FOREVER);
-                data->scroll_delta_x = 0;
-            }
+            // if (abs(data->scroll_delta_x) > SCROLL_TICK) {
+            //     input_report_rel(data->dev, INPUT_REL_HWHEEL,
+            //         data->scroll_delta_x > 0 ? 1 : -1, true, K_FOREVER);
+            //     data->scroll_delta_x = 0;
+            // }
             break;
         case PAW32XX_SNIPE:
             input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
