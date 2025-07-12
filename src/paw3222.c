@@ -296,11 +296,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         case PAW32XX_SCROLL:
             // data->scroll_delta_x += x;
-            #if IS_ENABLED(CONFIG_PAW3222_SCROLL_ROTATE_90)
-                data->scroll_delta_y += x; // 90度回転
-            #else
-                data->scroll_delta_y += y; // 通常
-            #endif
+            data->scroll_delta_y += y; // 通常
 
             if (abs(data->scroll_delta_y) > SCROLL_TICK) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL,
