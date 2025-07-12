@@ -117,15 +117,15 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
-    - name: sekigon-gonnoc
-      url-base: https://github.com/sekigon-gonnoc
+    - name: nuovotaka
+      url-base: https://github.com/nuovotaka
   projects:
     - name: zmk
       remote: zmkfirmware
       revision: main
       import: app/west.yml
-    - name: zmk-driver-paw3222
-      remote: sekigon-gonnoc
+    - name: zmk-driver-paw3222-alpha
+      remote: nuovotaka
       revision: main
 ```
 
