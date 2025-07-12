@@ -1,10 +1,9 @@
+// paw3222.c
+
 /*
  * Copyright 2024 Google LLC
  * Modifications Copyright 2025 nuovotaka
  * Modifications Copyright 2025 sekigon-gonnoc
- *
- * Original source code:
- * https://github.com/zephyrproject-rtos/zephyr/blob/19c6240b6865bcb28e1d786d4dcadfb3a02067a0/drivers/input/input_paw32xx.c
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -22,8 +21,7 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/sys/util.h>
 
-#include <zmk/events/layer_state_changed.h>
-#include <zmk/event_manager.h>
+#include <zmk/keymap.h>
 
 #include "../include/paw3222.h"
 
@@ -71,33 +69,17 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MIN (16 * RES_STEP)
 #define RES_MAX (127 * RES_STEP)
 
-#define SCROLL_LAYER_THRESHOLD 10
+#define SCROLL_TICK 10
 
-
-struct paw32xx_config {
-    struct spi_dt_spec spi;
-    struct gpio_dt_spec irq_gpio;
-    struct gpio_dt_spec power_gpio;
-    size_t scroll_layers_len;
-    int32_t *scroll_layers;
-    int16_t res_cpi;
-    bool force_awake;
-};
-
-struct paw32xx_data {
-    const struct device *dev;
-    struct k_work motion_work;
-    struct gpio_callback motion_cb;
-    struct k_timer motion_timer; // Add timer for delayed motion checking
-    int scroll_layer_index;
-    int scroll_layer_accum;
+enum paw32xx_input_mode {
+    PAW32XX_MOVE,
+    PAW32XX_SCROLL,
+    PAW32XX_SNIPE,
 };
 
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
-
     uint8_t shift = 31 - index;
-
     return (int32_t)(value << shift) >> shift;
 }
 
@@ -213,85 +195,20 @@ static int paw32xx_read_xy(const struct device *dev, int16_t *x, int16_t *y) {
     return 0;
 }
 
-static void paw32xx_motion_timer_handler(struct k_timer *timer) {
-    struct paw32xx_data *data = CONTAINER_OF(timer, struct paw32xx_data, motion_timer);
-    k_work_submit(&data->motion_work);
-}
-
-static void paw32xx_motion_work_handler(struct k_work *work) {
-    struct paw32xx_data *data = CONTAINER_OF(work, struct paw32xx_data, motion_work);
-    const struct device *dev = data->dev;
+static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct device *dev) {
     const struct paw32xx_config *cfg = dev->config;
-    uint8_t val;
-    int16_t x, y;
-    int ret;
-
-    ret = paw32xx_read_reg(dev, PAW32XX_MOTION, &val);
-    if (ret < 0) {
-        return;
-    }
-
-    if ((val & MOTION_STATUS_MOTION) == 0x00) {
-        // No motion detected, re-enable interrupts and wait for next interrupt
-        gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
-
-        if (gpio_pin_get_dt(&cfg->irq_gpio) == 0) {
-            return;
+    uint8_t curr_layer = zmk_keymap_highest_layer_active();
+    for (size_t i = 0; i < cfg->scroll_layers_len; i++) {
+        if (curr_layer == cfg->scroll_layers[i]) {
+            return PAW32XX_SCROLL;
         }
     }
-
-    ret = paw32xx_read_xy(dev, &x, &y);
-    if (ret < 0) {
-        return;
-    }
-
-    LOG_DBG("x=%4d y=%4d", x, y);
-
-    // --- scroll-layers 機能ここから ---
-    if (cfg->scroll_layers_len > 0) {
-        data->scroll_layer_accum += y;
-        
-        LOG_INF("scroll_layer_index=%d y=%d accum=%d", data->scroll_layer_index, y, data->scroll_layer_accum);
-
-        if (data->scroll_layer_accum > SCROLL_LAYER_THRESHOLD) {
-            if (data->scroll_layer_index < cfg->scroll_layers_len - 1) {
-                data->scroll_layer_index++;
-                int32_t new_layer = cfg->scroll_layers[data->scroll_layer_index];
-                zmk_keymap_layer_activate(new_layer);
-            }
-            data->scroll_layer_accum = 0;
-        } else if (data->scroll_layer_accum < -SCROLL_LAYER_THRESHOLD) {
-            if (data->scroll_layer_index > 0) {
-                int32_t old_layer = cfg->scroll_layers[data->scroll_layer_index];
-                zmk_keymap_layer_deactivate(old_layer);
-                data->scroll_layer_index--;
-            }
-            data->scroll_layer_accum = 0;
+    for (size_t i = 0; i < cfg->snipe_layers_len; i++) {
+        if (curr_layer == cfg->snipe_layers[i]) {
+            return PAW32XX_SNIPE;
         }
     }
-    // --- scroll-layers 機能ここまで ---
-    
-    input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-    input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
-
-    // Schedule next check after 15ms without using interrupts
-    k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
-}
-
-static void paw32xx_motion_handler(const struct device *gpio_dev, struct gpio_callback *cb,
-                                   uint32_t pins) {
-    struct paw32xx_data *data = CONTAINER_OF(cb, struct paw32xx_data, motion_cb);
-    const struct device *dev = data->dev;
-    const struct paw32xx_config *cfg = dev->config;
-
-    // Disable interrupts while timer is active
-    gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_DISABLE);
-
-    // Cancel any pending timer
-    k_timer_stop(&data->motion_timer);
-
-    // Process motion
-    k_work_submit(&data->motion_work);
+    return PAW32XX_MOVE;
 }
 
 int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
@@ -326,6 +243,91 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
     }
 
     return 0;
+}
+
+static void paw32xx_motion_timer_handler(struct k_timer *timer) {
+    struct paw32xx_data *data = CONTAINER_OF(timer, struct paw32xx_data, motion_timer);
+    k_work_submit(&data->motion_work);
+}
+
+static void paw32xx_motion_work_handler(struct k_work *work) {
+    struct paw32xx_data *data = CONTAINER_OF(work, struct paw32xx_data, motion_work);
+    const struct device *dev = data->dev;
+    const struct paw32xx_config *cfg = dev->config;
+    uint8_t val;
+    int16_t x, y;
+    int ret;
+
+    ret = paw32xx_read_reg(dev, PAW32XX_MOTION, &val);
+    if (ret < 0) {
+        return;
+    }
+
+    if ((val & MOTION_STATUS_MOTION) == 0x00) {
+        gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
+        if (gpio_pin_get_dt(&cfg->irq_gpio) == 0) {
+            return;
+        }
+    }
+
+    ret = paw32xx_read_xy(dev, &x, &y);
+    if (ret < 0) {
+        return;
+    }
+
+    enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
+
+    // CPI切り替え
+    int16_t target_cpi = cfg->res_cpi;
+    if (input_mode == PAW32XX_SNIPE && cfg->snipe_cpi > 0) {
+        target_cpi = cfg->snipe_cpi;
+    }
+    if (data->current_cpi != target_cpi) {
+        paw32xx_set_resolution(dev, target_cpi);
+        data->current_cpi = target_cpi;
+    }
+
+    switch (input_mode) {
+        case PAW32XX_MOVE:
+            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
+            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
+            data->scroll_delta_x = 0;
+            data->scroll_delta_y = 0;
+            break;
+        case PAW32XX_SCROLL:
+            data->scroll_delta_x += x;
+            data->scroll_delta_y += y;
+            if (abs(data->scroll_delta_y) > SCROLL_TICK) {
+                input_report_rel(data->dev, INPUT_REL_WHEEL,
+                    data->scroll_delta_y > 0 ? 1 : -1, true, K_FOREVER);
+                data->scroll_delta_y = 0;
+            }
+            if (abs(data->scroll_delta_x) > SCROLL_TICK) {
+                input_report_rel(data->dev, INPUT_REL_HWHEEL,
+                    data->scroll_delta_x > 0 ? 1 : -1, true, K_FOREVER);
+                data->scroll_delta_x = 0;
+            }
+            break;
+        case PAW32XX_SNIPE:
+            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
+            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
+            data->scroll_delta_x = 0;
+            data->scroll_delta_y = 0;
+            break;
+    }
+
+    k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
+}
+
+static void paw32xx_motion_handler(const struct device *gpio_dev, struct gpio_callback *cb,
+                                   uint32_t pins) {
+    struct paw32xx_data *data = CONTAINER_OF(cb, struct paw32xx_data, motion_cb);
+    const struct device *dev = data->dev;
+    const struct paw32xx_config *cfg = dev->config;
+
+    gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_DISABLE);
+    k_timer_stop(&data->motion_timer);
+    k_work_submit(&data->motion_work);
 }
 
 int paw32xx_force_awake(const struct device *dev, bool enable) {
@@ -386,8 +388,9 @@ static int paw32xx_init(const struct device *dev) {
     struct paw32xx_data *data = dev->data;
     int ret;
 
-    data->scroll_layer_index = 0;
-    data->scroll_layer_accum = 0;
+    data->scroll_delta_x = 0;
+    data->scroll_delta_y = 0;
+    data->current_cpi = -1;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
@@ -397,30 +400,21 @@ static int paw32xx_init(const struct device *dev) {
     data->dev = dev;
 
     k_work_init(&data->motion_work, paw32xx_motion_work_handler);
-    // Initialize the timer for delayed motion checks
     k_timer_init(&data->motion_timer, paw32xx_motion_timer_handler, NULL);
 
 #if DT_INST_NODE_HAS_PROP(0, power_gpios)
-    // Initialize power GPIO if defined
     if (gpio_is_ready_dt(&cfg->power_gpio)) {
-        // Configure as output but start with power OFF
         ret = gpio_pin_configure_dt(&cfg->power_gpio, GPIO_OUTPUT_INACTIVE);
         if (ret != 0) {
             LOG_ERR("Power pin configuration failed: %d", ret);
             return ret;
         }
-
-        // Wait 0.5 seconds before turning on power
         k_sleep(K_MSEC(500));
-
-        // Now turn on power
         ret = gpio_pin_set_dt(&cfg->power_gpio, 1);
         if (ret != 0) {
             LOG_ERR("Power pin set failed: %d", ret);
             return ret;
         }
-
-        // Wait for power stabilization
         k_sleep(K_MSEC(10));
     }
 #endif
@@ -498,7 +492,6 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
                 LOG_ERR("Failed to enable power: %d", ret);
                 return ret;
             }
-            // Wait for power stabilization
             k_sleep(K_MSEC(10));
         }
 #endif
@@ -518,30 +511,27 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
 }
 #endif
 
-#define PAW32XX_SPI_MODE                                                                           \
+#define PAW32XX_SPI_MODE \
     (SPI_OP_MODE_MASTER | SPI_WORD_SET(8) | SPI_MODE_CPOL | SPI_MODE_CPHA | SPI_TRANSFER_MSB)
 
-#define PAW32XX_INIT(n)                                                                            \
-    BUILD_ASSERT(IN_RANGE(DT_INST_PROP_OR(n, res_cpi, RES_MIN), RES_MIN, RES_MAX),                 \
-                 "invalid res-cpi");                                                               \
-                                                                                                   \
-    static int32_t scroll_layers##n[] = DT_PROP(DT_DRV_INST(n), scroll_layers);                    \
-                                                                                                   \
-    static const struct paw32xx_config paw32xx_cfg_##n = {                                         \
-        .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0),                                       \
-        .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios),                                           \
-        .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}),                               \
-        .scroll_layers = scroll_layers##n,                                                         \
-        .scroll_layers_len = DT_PROP_LEN(DT_DRV_INST(n), scroll_layers),                           \
-        .res_cpi = DT_INST_PROP_OR(n, res_cpi, -1),                                                \
-        .force_awake = DT_INST_PROP(n, force_awake),                                               \
-    };                                                                                             \
-                                                                                                   \
-    static struct paw32xx_data paw32xx_data_##n;                                                   \
-                                                                                                   \
-    PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action);                                                \
-                                                                                                   \
-    DEVICE_DT_INST_DEFINE(n, paw32xx_init, PM_DEVICE_DT_INST_GET(n), &paw32xx_data_##n,            \
+#define PAW32XX_INIT(n) \
+    static int32_t scroll_layers##n[] = DT_PROP(DT_DRV_INST(n), scroll_layers); \
+    static int32_t snipe_layers##n[] = DT_PROP(DT_DRV_INST(n), snipe_layers); \
+    static const struct paw32xx_config paw32xx_cfg_##n = { \
+        .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0), \
+        .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios), \
+        .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}), \
+        .scroll_layers = scroll_layers##n, \
+        .scroll_layers_len = DT_PROP_LEN(DT_DRV_INST(n), scroll_layers), \
+        .snipe_layers = snipe_layers##n, \
+        .snipe_layers_len = DT_PROP_LEN(DT_DRV_INST(n), snipe_layers), \
+        .res_cpi = DT_INST_PROP_OR(n, res_cpi, CONFIG_PAW3222_RES_CPI), \
+        .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
+        .force_awake = DT_INST_PROP(n, force_awake), \
+    }; \
+    static struct paw32xx_data paw32xx_data_##n; \
+    PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action); \
+    DEVICE_DT_INST_DEFINE(n, paw32xx_init, PM_DEVICE_DT_INST_GET(n), &paw32xx_data_##n, \
                           &paw32xx_cfg_##n, POST_KERNEL, CONFIG_INPUT_INIT_PRIORITY, NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(PAW32XX_INIT)

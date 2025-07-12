@@ -26,6 +26,12 @@ properties:
     description: |
       List of layer numbers to switch between using the scroll-layers feature.
 
+  snipe-layers:
+    type: array
+    required: false
+    description: |
+      List of layer numbers to switch between using the snipes-layers feature.
+
   res-cpi:
     type: int
     description: |
