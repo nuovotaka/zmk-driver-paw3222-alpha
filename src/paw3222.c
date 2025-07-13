@@ -518,16 +518,16 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
     (SPI_OP_MODE_MASTER | SPI_WORD_SET(8) | SPI_MODE_CPOL | SPI_MODE_CPHA | SPI_TRANSFER_MSB)
 
 #define PAW32XX_INIT(n) \
-    static int32_t scroll_layers##n[] = DT_PROP(DT_DRV_INST(n), scroll_layers); \
-    static int32_t snipe_layers##n[] = DT_PROP(DT_DRV_INST(n), snipe_layers); \
+    static int32_t scroll_layers##n[] = DT_INST_PROP_OR(n, scroll_layers, {}); \
+    static int32_t snipe_layers##n[] = DT_INST_PROP_OR(n, snipe_layers, {}); \
     static const struct paw32xx_config paw32xx_cfg_##n = { \
         .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0), \
         .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios), \
         .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}), \
         .scroll_layers = scroll_layers##n, \
-        .scroll_layers_len = DT_PROP_LEN(DT_DRV_INST(n), scroll_layers), \
+        .scroll_layers_len = DT_INST_PROP_LEN_OR(n, scroll_layers, 0), \
         .snipe_layers = snipe_layers##n, \
-        .snipe_layers_len = DT_PROP_LEN(DT_DRV_INST(n), snipe_layers), \
+        .snipe_layers_len = DT_INST_PROP_LEN_OR(n, snipe_layers, 0), \
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, CONFIG_PAW3222_RES_CPI), \
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
         .force_awake = DT_INST_PROP(n, force_awake), \
