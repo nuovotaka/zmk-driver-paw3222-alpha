@@ -1,0 +1,14 @@
+
+menuconfig PAW3222
+    bool "PAW3222 mouse optical sensor"
+  select SPI
+    help
+      Enable PAW3222 mouse optical sensor.
+
+config PAW3222_RES_CPI
+    int "PAW3222 default CPI"
+    default 1200
+
+config PAW3222_SNIPE_CPI
+    int "PAW3222 snipe CPI"
+    default 400
