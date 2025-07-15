@@ -72,7 +72,7 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MAX (127 * RES_STEP)
 
 #define SCROLL_TICK 10
-#define SCROLL_LOCK_MS 250
+#define SCROLL_LOCK_MS 300
 
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
@@ -305,11 +305,13 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         case PAW32XX_SCROLL:
             int64_t now = k_uptime_get();
 
+            // ロック解除判定
             if (data->scroll_lock != SCROLL_UNLOCKED && now > data->scroll_lock_expire_time) {
                 data->scroll_lock = SCROLL_UNLOCKED;
             }
 
             if (data->scroll_lock == SCROLL_LOCKED_X) {
+                // 水平ロック中は垂直を無視
                 data->scroll_delta_x += x;
                 if (abs(data->scroll_delta_x) > SCROLL_TICK) {
                     input_report_rel(data->dev, INPUT_REL_HWHEEL,
@@ -318,6 +320,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
                 }
                 data->scroll_delta_y = 0;
             } else if (data->scroll_lock == SCROLL_LOCKED_Y) {
+                // 垂直ロック中は水平を無視
                 data->scroll_delta_y += y;
                 if (abs(data->scroll_delta_y) > SCROLL_TICK) {
                     input_report_rel(data->dev, INPUT_REL_WHEEL,
@@ -326,6 +329,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
                 }
                 data->scroll_delta_x = 0;
             } else {
+                // ロックされていない場合、どちらか動いた方向でロック
                 if (abs(x) > abs(y) && abs(x) > SCROLL_TICK) {
                     data->scroll_lock = SCROLL_LOCKED_X;
                     data->scroll_lock_expire_time = now + SCROLL_LOCK_MS;
@@ -349,6 +353,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
                 }
             }
 
+            // X/Y座標は通常通りレポート
             input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
             input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
             break;
@@ -438,6 +443,10 @@ static int paw32xx_init(const struct device *dev) {
     data->scroll_delta_x = 0;
     data->scroll_delta_y = 0;
     data->current_cpi = -1;
+
+    // スクロールロック状態を初期化
+    data->scroll_lock = SCROLL_UNLOCKED;
+    data->scroll_lock_expire_time = 0;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
