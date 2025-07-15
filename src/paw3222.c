@@ -303,20 +303,21 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             data->scroll_delta_y = 0;
             break;
         case PAW32XX_SCROLL:
-                int64_t now = k_uptime_get();
+            int64_t now = k_uptime_get();
 
             // ロック解除判定
             if (data->scroll_lock != SCROLL_UNLOCKED && now > data->scroll_lock_expire_time) {
                 data->scroll_lock = SCROLL_UNLOCKED;
             }
 
-            // ロックされていない場合、どちらか一方がしきい値を超えたらその方向にロック
+            // ロックされていない場合、どちらか大きい方にロック
             if (data->scroll_lock == SCROLL_UNLOCKED) {
-                if (abs(x) > SCROLL_TICK) {
-                    data->scroll_lock = SCROLL_LOCKED_X;
-                    data->scroll_lock_expire_time = now + SCROLL_LOCK_MS;
-                } else if (abs(y) > SCROLL_TICK) {
-                    data->scroll_lock = SCROLL_LOCKED_Y;
+                if (abs(x) > SCROLL_TICK || abs(y) > SCROLL_TICK) {
+                    if (abs(x) >= abs(y)) {
+                        data->scroll_lock = SCROLL_LOCKED_X;
+                    } else {
+                        data->scroll_lock = SCROLL_LOCKED_Y;
+                    }
                     data->scroll_lock_expire_time = now + SCROLL_LOCK_MS;
                 }
             }
