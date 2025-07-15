@@ -70,6 +70,7 @@ struct paw32xx_data {
     int16_t current_cpi;
     enum { SCROLL_UNLOCKED, SCROLL_LOCKED_X, SCROLL_LOCKED_Y } scroll_lock;
     int64_t scroll_lock_expire_time;
+    bool just_unlocked;
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */
