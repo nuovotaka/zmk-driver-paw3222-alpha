@@ -76,11 +76,11 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
-    PAW32XX_SCROLL,
-    PAW32XX_SCROLL_HORIZONTAL,
-    PAW32XX_SCROLL_SNIPE,
-    PAW32XX_SCROLL_SNIPE_HORIZONTAL,
-    PAW32XX_SNIPE,
+    PAW32XX_SCROLL,                // 垂直スクロール
+    PAW32XX_SCROLL_HORIZONTAL,     // 水平スクロール
+    PAW32XX_SNIPE,                 // 高精細カーソル移動
+    PAW32XX_SCROLL_SNIPE,          // 高精細垂直スクロール
+    PAW32XX_SCROLL_SNIPE_HORIZONTAL // 高精細水平スクロール
 };
 
 
@@ -206,7 +206,23 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     const struct paw32xx_config *cfg = dev->config;
     uint8_t curr_layer = zmk_keymap_highest_layer_active();
 
-    // 水平スクロールレイヤー判定
+    // 高精細水平スクロール
+    if (cfg->scroll_snipe_horizontal_layers && cfg->scroll_snipe_horizontal_layers_len > 0) {
+        for (size_t i = 0; i < cfg->scroll_snipe_horizontal_layers_len; i++) {
+            if (curr_layer == cfg->scroll_snipe_horizontal_layers[i]) {
+                return PAW32XX_SCROLL_SNIPE_HORIZONTAL;
+            }
+        }
+    }
+    // 高精細垂直スクロール
+    if (cfg->scroll_snipe_layers && cfg->scroll_snipe_layers_len > 0) {
+        for (size_t i = 0; i < cfg->scroll_snipe_layers_len; i++) {
+            if (curr_layer == cfg->scroll_snipe_layers[i]) {
+                return PAW32XX_SCROLL_SNIPE;
+            }
+        }
+    }
+    // 水平スクロール
     if (cfg->scroll_horizontal_layers && cfg->scroll_horizontal_layers_len > 0) {
         for (size_t i = 0; i < cfg->scroll_horizontal_layers_len; i++) {
             if (curr_layer == cfg->scroll_horizontal_layers[i]) {
@@ -214,16 +230,16 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
             }
         }
     }
-    // 垂直スクロールレイヤー判定
-    if (cfg->scroll_enabled && cfg->scroll_layers && cfg->scroll_layers_len > 0) {
+    // 垂直スクロール
+    if (cfg->scroll_layers && cfg->scroll_layers_len > 0) {
         for (size_t i = 0; i < cfg->scroll_layers_len; i++) {
             if (curr_layer == cfg->scroll_layers[i]) {
                 return PAW32XX_SCROLL;
             }
         }
     }
-    // スナイプレイヤー判定
-    if (cfg->snipe_enabled && cfg->snipe_layers && cfg->snipe_layers_len > 0) {
+    // 高精細カーソル移動
+    if (cfg->snipe_layers && cfg->snipe_layers_len > 0) {
         for (size_t i = 0; i < cfg->snipe_layers_len; i++) {
             if (curr_layer == cfg->snipe_layers[i]) {
                 return PAW32XX_SNIPE;
@@ -314,35 +330,32 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         case PAW32XX_MOVE:
             input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
             input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
-            data->scroll_delta_x = 0;
-            data->scroll_delta_y = 0;
             break;
-        case PAW32XX_SCROLL:
-            int16_t abs_x = abs(x);
-            int16_t abs_y = abs(y);
-
-            // しきい値以下の小さな動きは無視
-            if (abs_x < SCROLL_TICK && abs_y < SCROLL_TICK) {
-                break;
-            }
-
-            if (abs_x >= abs_y) {
-                // 水平成分が大きい場合は左右スクロールのみ
-                input_report_rel(data->dev, INPUT_REL_HWHEEL, (x > 0 ? 1 : -1), true, K_FOREVER);
-            } else {
-                // 垂直成分が大きい場合は上下スクロールのみ
+        case PAW32XX_SCROLL: // 垂直スクロール
+            if (abs(y) > SCROLL_TICK) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
             }
-
-            // X/Y座標は通常通りレポート（不要なら削除可）
+            break;
+        case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
+            if (abs(y) > SCROLL_TICK) {
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
+            }
+            break;
+        case PAW32XX_SNIPE: // 高精細カーソル移動
             input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
             input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
             break;
-        case PAW32XX_SNIPE:
-            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
-            data->scroll_delta_x = 0;
-            data->scroll_delta_y = 0;
+        case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
+            if (abs(y) > SCROLL_TICK) {
+                // 必要に応じてスケーリング処理を追加
+                input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
+            }
+            break;
+        case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
+            if (abs(y) > SCROLL_TICK) {
+                // 必要に応じてスケーリング処理を追加
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
+            }
             break;
         default:
             LOG_ERR("Unknown input_mode: %d", input_mode);
