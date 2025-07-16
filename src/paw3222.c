@@ -303,52 +303,23 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             data->scroll_delta_y = 0;
             break;
         case PAW32XX_SCROLL:
-            int64_t now = k_uptime_get();
+            int16_t abs_x = abs(x);
+            int16_t abs_y = abs(y);
 
-                // ロック解除判定
-            if (data->scroll_lock != SCROLL_UNLOCKED && now > data->scroll_lock_expire_time) {
-                data->scroll_lock = SCROLL_UNLOCKED;
-                data->scroll_unlock_time = now + 50; // 50ms待ち（何もしない）
-            }
-
-            // ロック解除後50ms間は何もしない
-            if (data->scroll_lock == SCROLL_UNLOCKED && now < data->scroll_unlock_time) {
-                data->scroll_delta_x = 0;
-                data->scroll_delta_y = 0;
+            // しきい値以下の小さな動きは無視
+            if (abs_x < SCROLL_TICK && abs_y < SCROLL_TICK) {
                 break;
             }
 
-            // ロックされていない場合、どちらか大きい方にロック
-            if (data->scroll_lock == SCROLL_UNLOCKED) {
-                if (abs(x) > SCROLL_TICK || abs(y) > SCROLL_TICK) {
-                    if (abs(x) >= abs(y)) {
-                        data->scroll_lock = SCROLL_LOCKED_X;
-                    } else {
-                        data->scroll_lock = SCROLL_LOCKED_Y;
-                    }
-                    data->scroll_lock_expire_time = now + SCROLL_LOCK_MS;
-                }
+            if (abs_x >= abs_y) {
+                // 水平成分が大きい場合は左右スクロールのみ
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, (x > 0 ? 1 : -1), true, K_FOREVER);
+            } else {
+                // 垂直成分が大きい場合は上下スクロールのみ
+                input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
             }
 
-            if (data->scroll_lock == SCROLL_LOCKED_X) {
-                data->scroll_delta_x += x;
-                if (abs(data->scroll_delta_x) > SCROLL_TICK) {
-                    input_report_rel(data->dev, INPUT_REL_HWHEEL,
-                        data->scroll_delta_x > 0 ? 1 : -1, true, K_FOREVER);
-                    data->scroll_delta_x = 0;
-                }
-                data->scroll_delta_y = 0;
-            } else if (data->scroll_lock == SCROLL_LOCKED_Y) {
-                data->scroll_delta_y += y;
-                if (abs(data->scroll_delta_y) > SCROLL_TICK) {
-                    input_report_rel(data->dev, INPUT_REL_WHEEL,
-                        data->scroll_delta_y > 0 ? 1 : -1, true, K_FOREVER);
-                    data->scroll_delta_y = 0;
-                }
-                data->scroll_delta_x = 0;
-            }
-
-            // X/Y座標は通常通りレポート
+            // X/Y座標は通常通りレポート（不要なら削除可）
             input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
             input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
             break;
