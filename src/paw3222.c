@@ -308,12 +308,11 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
                 // ロック解除判定
             if (data->scroll_lock != SCROLL_UNLOCKED && now > data->scroll_lock_expire_time) {
                 data->scroll_lock = SCROLL_UNLOCKED;
-                data->just_unlocked = true; // ロック解除直後フラグ
+                data->scroll_unlock_time = now + 50; // 50ms待ち（何もしない）
             }
 
-            // ロック解除直後の1サイクルはxy両方のスクロールを無効化
-            if (data->just_unlocked) {
-                data->just_unlocked = false;
+            // ロック解除後50ms間は何もしない
+            if (data->scroll_lock == SCROLL_UNLOCKED && now < data->scroll_unlock_time) {
                 data->scroll_delta_x = 0;
                 data->scroll_delta_y = 0;
                 break;
@@ -443,7 +442,7 @@ static int paw32xx_init(const struct device *dev) {
     // スクロールロック状態を初期化
     data->scroll_lock = SCROLL_UNLOCKED;
     data->scroll_lock_expire_time = 0;
-    data->just_unlocked = false;
+    data->scroll_unlock_time = 0;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
