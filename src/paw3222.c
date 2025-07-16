@@ -206,22 +206,6 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     const struct paw32xx_config *cfg = dev->config;
     uint8_t curr_layer = zmk_keymap_highest_layer_active();
 
-    // 高精細水平スクロール
-    if (cfg->scroll_snipe_horizontal_layers && cfg->scroll_snipe_horizontal_layers_len > 0) {
-        for (size_t i = 0; i < cfg->scroll_snipe_horizontal_layers_len; i++) {
-            if (curr_layer == cfg->scroll_snipe_horizontal_layers[i]) {
-                return PAW32XX_SCROLL_SNIPE_HORIZONTAL;
-            }
-        }
-    }
-    // 高精細垂直スクロール
-    if (cfg->scroll_snipe_layers && cfg->scroll_snipe_layers_len > 0) {
-        for (size_t i = 0; i < cfg->scroll_snipe_layers_len; i++) {
-            if (curr_layer == cfg->scroll_snipe_layers[i]) {
-                return PAW32XX_SCROLL_SNIPE;
-            }
-        }
-    }
     // 水平スクロール
     if (cfg->scroll_horizontal_layers && cfg->scroll_horizontal_layers_len > 0) {
         for (size_t i = 0; i < cfg->scroll_horizontal_layers_len; i++) {
@@ -238,7 +222,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
             }
         }
     }
-    // 高精細カーソル移動
+    // 高精細カーソル移動（スナイプ）
     if (cfg->snipe_layers && cfg->snipe_layers_len > 0) {
         for (size_t i = 0; i < cfg->snipe_layers_len; i++) {
             if (curr_layer == cfg->snipe_layers[i]) {
