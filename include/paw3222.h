@@ -46,6 +46,8 @@ struct paw32xx_config {
     int32_t *scroll_layers;
     size_t snipe_layers_len;
     int32_t *snipe_layers;
+    size_t scroll_horizontal_layers_len;
+    int32_t *scroll_horizontal_layers;
     int16_t res_cpi;
     int16_t snipe_cpi;
     bool force_awake;

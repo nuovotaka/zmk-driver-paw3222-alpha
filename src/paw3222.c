@@ -77,8 +77,12 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
     PAW32XX_SCROLL,
+    PAW32XX_SCROLL_HORIZONTAL,
+    PAW32XX_SCROLL_SNIPE,
+    PAW32XX_SCROLL_SNIPE_HORIZONTAL,
     PAW32XX_SNIPE,
 };
+
 
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
@@ -202,6 +206,15 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     const struct paw32xx_config *cfg = dev->config;
     uint8_t curr_layer = zmk_keymap_highest_layer_active();
 
+    // 水平スクロールレイヤー判定
+    if (cfg->scroll_horizontal_layers && cfg->scroll_horizontal_layers_len > 0) {
+        for (size_t i = 0; i < cfg->scroll_horizontal_layers_len; i++) {
+            if (curr_layer == cfg->scroll_horizontal_layers[i]) {
+                return PAW32XX_SCROLL_HORIZONTAL;
+            }
+        }
+    }
+    // 垂直スクロールレイヤー判定
     if (cfg->scroll_enabled && cfg->scroll_layers && cfg->scroll_layers_len > 0) {
         for (size_t i = 0; i < cfg->scroll_layers_len; i++) {
             if (curr_layer == cfg->scroll_layers[i]) {
@@ -209,6 +222,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
             }
         }
     }
+    // スナイプレイヤー判定
     if (cfg->snipe_enabled && cfg->snipe_layers && cfg->snipe_layers_len > 0) {
         for (size_t i = 0; i < cfg->snipe_layers_len; i++) {
             if (curr_layer == cfg->snipe_layers[i]) {
@@ -218,6 +232,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     }
     return PAW32XX_MOVE;
 }
+
 
 int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
     uint8_t val;
@@ -544,6 +559,9 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, snipe_layers), \
         (static int32_t snipe_layers##n[] = DT_INST_PROP(n, snipe_layers);), \
         (/* 何もしない */)) \
+    COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
+        (static int32_t scroll_horizontal_layers##n[] = DT_INST_PROP(n, scroll_horizontal_layers);), \
+        (/* 何もしない */)) \
     static const struct paw32xx_config paw32xx_cfg_##n = { \
         .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0), \
         .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios), \
@@ -556,6 +574,10 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
             (snipe_layers##n), (NULL)), \
         .snipe_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, snipe_layers), \
             (DT_INST_PROP_LEN(n, snipe_layers)), (0)), \
+        .scroll_horizontal_layers = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
+            (scroll_horizontal_layers##n), (NULL)), \
+        .scroll_horizontal_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
+            (DT_INST_PROP_LEN(n, scroll_horizontal_layers)), (0)), \
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, CONFIG_PAW3222_RES_CPI), \
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
         .force_awake = DT_INST_PROP(n, force_awake), \
