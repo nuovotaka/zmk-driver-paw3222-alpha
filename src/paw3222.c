@@ -317,12 +317,12 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         case PAW32XX_SCROLL: // 垂直スクロール
             if (abs(y) > SCROLL_TICK) {
-                input_report_rel(data->dev, x, y, (y > 0 ? 1 : -1), true, K_FOREVER);
+                input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
             if (abs(y) > SCROLL_TICK) {
-                input_report_rel(data->dev, x, y, (y > 0 ? 1 : -1), true, K_FOREVER);
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SNIPE: // 高精細カーソル移動
@@ -331,13 +331,13 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
             if (abs(y) > SCROLL_TICK) {
                 // 必要に応じてスケーリング処理を追加
-                input_report_rel(data->dev, x, y, (y > 0 ? 1 : -1), true, K_FOREVER);
+                input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
             if (abs(y) > SCROLL_TICK) {
                 // 必要に応じてスケーリング処理を追加
-                input_report_rel(data->dev, x, y, (y > 0 ? 1 : -1), true, K_FOREVER);
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         default:
