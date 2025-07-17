@@ -286,6 +286,18 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     int16_t x, y;
     int ret;
 
+    ret = paw32xx_read_reg(dev, PAW32XX_MOTION, &val);
+    if (ret < 0) {
+        return;
+    }
+
+    if ((val & MOTION_STATUS_MOTION) == 0x00) {
+        gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
+        if (gpio_pin_get_dt(&cfg->irq_gpio) == 0) {
+            return;
+        }
+    }
+
     ret = paw32xx_read_xy(dev, &x, &y);
     if (ret < 0) {
         return;
