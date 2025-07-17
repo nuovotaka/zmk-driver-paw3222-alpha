@@ -273,6 +273,11 @@ static void paw32xx_motion_timer_handler(struct k_timer *timer) {
     k_work_submit(&data->motion_work);
 }
 
+// prj.confで指定した角度をマクロとして使う
+#ifndef CONFIG_PAW32XX_SENSOR_ROTATION
+#define CONFIG_PAW32XX_SENSOR_ROTATION 0
+#endif
+
 static void paw32xx_motion_work_handler(struct k_work *work) {
     struct paw32xx_data *data = CONTAINER_OF(work, struct paw32xx_data, motion_work);
     const struct device *dev = data->dev;
@@ -286,15 +291,36 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         return;
     }
 
-    // ここでX/Yをそのままinput subsystemに送る
-    struct input_value values[2];
-    values[0].type = INPUT_EV_REL;
-    values[0].code = INPUT_REL_X;
-    values[0].value = x;
-    values[1].type = INPUT_EV_REL;
-    values[1].code = INPUT_REL_Y;
-    values[1].value = y;
-    input_report(data->dev, values, 2, true, K_FOREVER);
+    // 角度に応じて手動で変換
+    int16_t tx = x, ty = y;
+    switch (CONFIG_PAW32XX_SENSOR_ROTATION) {
+        case 0:
+            // 変換なし
+            break;
+        case 90: {
+            int16_t tmp = tx;
+            tx = -ty;
+            ty = tmp;
+            break;
+        }
+        case 180:
+            tx = -tx;
+            ty = -ty;
+            break;
+        case 270: {
+            int16_t tmp = tx;
+            tx = ty;
+            ty = -tmp;
+            break;
+        }
+        default:
+            // 不正な値の場合は変換なし
+            break;
+    }
+
+    // 以降はtx, tyを使って処理
+    input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
+    input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
 
     if ((val & MOTION_STATUS_MOTION) == 0x00) {
         gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
