@@ -72,6 +72,11 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MAX (127 * RES_STEP)
 
 #define SCROLL_TICK CONFIG_PAW32XX_SCROLL_TICK
+
+// prj.confで指定した角度をマクロとして使う
+#ifndef CONFIG_PAW32XX_SENSOR_ROTATION
+#define CONFIG_PAW32XX_SENSOR_ROTATION 90
+#endif
 #define PAW32XX_SENSOR_ROTATION CONFIG_PAW32XX_SENSOR_ROTATION
 
 #define SCROLL_LOCK_MS 300
@@ -275,10 +280,6 @@ static void paw32xx_motion_timer_handler(struct k_timer *timer) {
     k_work_submit(&data->motion_work);
 }
 
-// // prj.confで指定した角度をマクロとして使う
-// #ifndef CONFIG_PAW32XX_SENSOR_ROTATION
-// #define CONFIG_PAW32XX_SENSOR_ROTATION
-// #endif
 
 static void paw32xx_motion_work_handler(struct k_work *work) {
     struct paw32xx_data *data = CONTAINER_OF(work, struct paw32xx_data, motion_work);
