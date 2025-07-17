@@ -286,7 +286,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     int16_t x, y;
     int ret;
 
-    int ret = paw32xx_read_xy(dev, &x, &y);
+    ret = paw32xx_read_xy(dev, &x, &y);
     if (ret < 0) {
         return;
     }
@@ -322,7 +322,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     // 以降はtx, tyを使って処理
     input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
     input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
-    
+
     // enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
     // CPI切り替え
