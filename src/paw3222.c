@@ -71,7 +71,8 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MIN (16 * RES_STEP)
 #define RES_MAX (127 * RES_STEP)
 
-#define SCROLL_TICK 10
+#define SCROLL_TICK CONFIG_PAW32XX_SCROLL_TICK
+
 #define SCROLL_LOCK_MS 300
 
 enum paw32xx_input_mode {
