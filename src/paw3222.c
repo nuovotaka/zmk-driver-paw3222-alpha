@@ -281,10 +281,20 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     int16_t x, y;
     int ret;
 
-    ret = paw32xx_read_reg(dev, PAW32XX_MOTION, &val);
+    ret = paw32xx_read_xy(dev, &x, &y);
     if (ret < 0) {
         return;
     }
+
+    // ここでX/Yをそのままinput subsystemに送る
+    struct input_value values[2];
+    values[0].type = INPUT_EV_REL;
+    values[0].code = INPUT_REL_X;
+    values[0].value = x;
+    values[1].type = INPUT_EV_REL;
+    values[1].code = INPUT_REL_Y;
+    values[1].value = y;
+    input_report(data->dev, values, 2, true, K_FOREVER);
 
     if ((val & MOTION_STATUS_MOTION) == 0x00) {
         gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
@@ -310,40 +320,40 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         data->current_cpi = target_cpi;
     }
 
-    switch (input_mode) {
-        case PAW32XX_MOVE: // 通常カーソル移動
-        case PAW32XX_SNIPE: { // 高精細カーソル移動
-            // X/Y移動を送信（swap/invertはinput-processorsで吸収）
-            input_report_rel(data->dev, INPUT_REL_X, x, false, K_NO_WAIT);
-            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
-            break;
-        }
-        case PAW32XX_SCROLL: // 垂直スクロール
-            if (abs(y) > SCROLL_TICK) {
-                input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
-            }
-            break;
-        case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
-            if (abs(y) > SCROLL_TICK) {
-                input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
-            }
-            break;
-        case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
-            if (abs(y) > SCROLL_TICK) {
-                // 必要に応じてスケーリング処理を追加
-                input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
-            }
-            break;
-        case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
-            if (abs(y) > SCROLL_TICK) {
-                // 必要に応じてスケーリング処理を追加
-                input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
-            }
-            break;
-        default:
-            LOG_ERR("Unknown input_mode: %d", input_mode);
-            break;
-    }
+    // switch (input_mode) {
+    //     case PAW32XX_MOVE: // 通常カーソル移動
+    //     case PAW32XX_SNIPE: { // 高精細カーソル移動
+    //         // X/Y移動を送信（swap/invertはinput-processorsで吸収）
+    //         input_report_rel(data->dev, INPUT_REL_X, x, false, K_NO_WAIT);
+    //         input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
+    //         break;
+    //     }
+    //     case PAW32XX_SCROLL: // 垂直スクロール
+    //         if (abs(y) > SCROLL_TICK) {
+    //             input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
+    //         }
+    //         break;
+    //     case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
+    //         if (abs(y) > SCROLL_TICK) {
+    //             input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
+    //         }
+    //         break;
+    //     case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
+    //         if (abs(y) > SCROLL_TICK) {
+    //             // 必要に応じてスケーリング処理を追加
+    //             input_report_rel(data->dev, INPUT_REL_WHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
+    //         }
+    //         break;
+    //     case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
+    //         if (abs(y) > SCROLL_TICK) {
+    //             // 必要に応じてスケーリング処理を追加
+    //             input_report_rel(data->dev, INPUT_REL_HWHEEL, (y > 0 ? 1 : -1), true, K_FOREVER);
+    //         }
+    //         break;
+    //     default:
+    //         LOG_ERR("Unknown input_mode: %d", input_mode);
+    //         break;
+    // }
 
     k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
 }
