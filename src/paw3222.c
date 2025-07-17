@@ -312,8 +312,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
 
     switch (input_mode) {
         case PAW32XX_MOVE:
-            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
+            // センサー値をinput subsystemに流す（swap/invertが効く）
+            input_report_sensor(data->dev, x, y, true, K_FOREVER);
             break;
         case PAW32XX_SCROLL: // 垂直スクロール
             if (abs(y) > SCROLL_TICK) {
@@ -326,8 +326,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             }
             break;
         case PAW32XX_SNIPE: // 高精細カーソル移動
-            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
+            input_report_sensor(data->dev, x, y, true, K_FOREVER);
             break;
         case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
             if (abs(y) > SCROLL_TICK) {
@@ -343,8 +342,9 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         default:
             LOG_ERR("Unknown input_mode: %d", input_mode);
-        break;
+            break;
     }
+
 
     k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
 }
