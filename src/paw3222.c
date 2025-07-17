@@ -323,7 +323,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
     input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
 
-    // enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
+    enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
     // CPI切り替え
     int16_t target_cpi = cfg->res_cpi;
