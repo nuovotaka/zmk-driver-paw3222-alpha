@@ -286,7 +286,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     int16_t x, y;
     int ret;
 
-    ret = paw32xx_read_xy(dev, &x, &y);
+    int ret = paw32xx_read_xy(dev, &x, &y);
     if (ret < 0) {
         return;
     }
@@ -295,7 +295,6 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     int16_t tx = x, ty = y;
     switch (CONFIG_PAW32XX_SENSOR_ROTATION) {
         case 0:
-            // 変換なし
             break;
         case 90: {
             int16_t tmp = tx;
@@ -314,27 +313,17 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         }
         default:
-            // 不正な値の場合は変換なし
             break;
     }
+
+    // デバッグ出力
+    LOG_DBG("x=%d y=%d tx=%d ty=%d", x, y, tx, ty);
 
     // 以降はtx, tyを使って処理
     input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
     input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
-
-    if ((val & MOTION_STATUS_MOTION) == 0x00) {
-        gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
-        if (gpio_pin_get_dt(&cfg->irq_gpio) == 0) {
-            return;
-        }
-    }
-
-    ret = paw32xx_read_xy(dev, &x, &y);
-    if (ret < 0) {
-        return;
-    }
-
-    enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
+    
+    // enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
     // CPI切り替え
     int16_t target_cpi = cfg->res_cpi;
