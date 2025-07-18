@@ -32,6 +32,12 @@ properties:
     description: |
       List of layer numbers to switch between using the scroll-layers feature.
 
+  scroll-horizontal-layers:
+    type: array
+    required: false
+    description: |
+      List of layer numbers to switch between using the horizontal scroll feature.
+
   res-cpi:
     type: int
     description: |

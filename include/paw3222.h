@@ -46,6 +46,8 @@ struct paw32xx_config {
     int32_t *scroll_layers;
     size_t snipe_layers_len;
     int32_t *snipe_layers;
+    size_t scroll_horizontal_layers_len;
+    int32_t *scroll_horizontal_layers;
     int16_t res_cpi;
     int16_t snipe_cpi;
     bool force_awake;
@@ -68,6 +70,9 @@ struct paw32xx_data {
     int16_t scroll_delta_x;
     int16_t scroll_delta_y;
     int16_t current_cpi;
+    enum { SCROLL_UNLOCKED, SCROLL_LOCKED_X, SCROLL_LOCKED_Y } scroll_lock;
+    int64_t scroll_lock_expire_time;
+    int64_t scroll_unlock_time;
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */
