@@ -71,14 +71,32 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MIN (16 * RES_STEP)
 #define RES_MAX (127 * RES_STEP)
 
-#define SCROLL_TICK 10
+#define SCROLL_TICK CONFIG_PAW32XX_SCROLL_TICK
+
+// prj.confで指定した角度をマクロとして使う
+#if defined(CONFIG_PAW32XX_SENSOR_ROTATION_0)
+#define PAW32XX_SENSOR_ROTATION 0
+#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_90)
+#define PAW32XX_SENSOR_ROTATION 90
+#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_180)
+#define PAW32XX_SENSOR_ROTATION 180
+#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_270)
+#define PAW32XX_SENSOR_ROTATION 270
+#else
+#define PAW32XX_SENSOR_ROTATION 0
+#endif
+
 #define SCROLL_LOCK_MS 300
 
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
-    PAW32XX_SCROLL,
-    PAW32XX_SNIPE,
+    PAW32XX_SCROLL,                // 垂直スクロール
+    PAW32XX_SCROLL_HORIZONTAL,     // 水平スクロール
+    PAW32XX_SNIPE,                 // 高精細カーソル移動
+    PAW32XX_SCROLL_SNIPE,          // 高精細垂直スクロール
+    PAW32XX_SCROLL_SNIPE_HORIZONTAL // 高精細水平スクロール
 };
+
 
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
@@ -202,14 +220,24 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     const struct paw32xx_config *cfg = dev->config;
     uint8_t curr_layer = zmk_keymap_highest_layer_active();
 
-    if (cfg->scroll_enabled && cfg->scroll_layers && cfg->scroll_layers_len > 0) {
+    // 水平スクロール
+    if (cfg->scroll_horizontal_layers && cfg->scroll_horizontal_layers_len > 0) {
+        for (size_t i = 0; i < cfg->scroll_horizontal_layers_len; i++) {
+            if (curr_layer == cfg->scroll_horizontal_layers[i]) {
+                return PAW32XX_SCROLL_HORIZONTAL;
+            }
+        }
+    }
+    // 垂直スクロール
+    if (cfg->scroll_layers && cfg->scroll_layers_len > 0) {
         for (size_t i = 0; i < cfg->scroll_layers_len; i++) {
             if (curr_layer == cfg->scroll_layers[i]) {
                 return PAW32XX_SCROLL;
             }
         }
     }
-    if (cfg->snipe_enabled && cfg->snipe_layers && cfg->snipe_layers_len > 0) {
+    // 高精細カーソル移動（スナイプ）
+    if (cfg->snipe_layers && cfg->snipe_layers_len > 0) {
         for (size_t i = 0; i < cfg->snipe_layers_len; i++) {
             if (curr_layer == cfg->snipe_layers[i]) {
                 return PAW32XX_SNIPE;
@@ -218,6 +246,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     }
     return PAW32XX_MOVE;
 }
+
 
 int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
     uint8_t val;
@@ -258,6 +287,7 @@ static void paw32xx_motion_timer_handler(struct k_timer *timer) {
     k_work_submit(&data->motion_work);
 }
 
+
 static void paw32xx_motion_work_handler(struct k_work *work) {
     struct paw32xx_data *data = CONTAINER_OF(work, struct paw32xx_data, motion_work);
     const struct device *dev = data->dev;
@@ -283,6 +313,38 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         return;
     }
 
+    // 角度に応じて手動で変換
+    int16_t tx = x, ty = y;
+    switch (PAW32XX_SENSOR_ROTATION) {
+        case 0:
+            break;
+        case 90: {
+            int16_t tmp = tx;
+            tx = -ty;
+            ty = tmp;
+            break;
+        }
+        case 180:
+            tx = -tx;
+            ty = -ty;
+            break;
+        case 270: {
+            int16_t tmp = tx;
+            tx = ty;
+            ty = -tmp;
+            break;
+        }
+        default:
+            break;
+    }
+
+    // デバッグ出力
+    LOG_DBG("x=%d y=%d tx=%d ty=%d", x, y, tx, ty);
+
+    // // 以降はtx, tyを使って処理
+    // input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
+    // input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
+
     enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
     // CPI切り替え
@@ -296,71 +358,38 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     }
 
     switch (input_mode) {
-        case PAW32XX_MOVE:
-            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
-            data->scroll_delta_x = 0;
-            data->scroll_delta_y = 0;
+        case PAW32XX_MOVE: // 通常カーソル移動
+        case PAW32XX_SNIPE: { // 高精細カーソル移動
+            // X/Y移動を送信（swap/invertはinput-processorsで吸収）
+            input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
+            input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
             break;
-        case PAW32XX_SCROLL:
-            int64_t now = k_uptime_get();
-
-                // ロック解除判定
-            if (data->scroll_lock != SCROLL_UNLOCKED && now > data->scroll_lock_expire_time) {
-                data->scroll_lock = SCROLL_UNLOCKED;
-                data->scroll_unlock_time = now + 50; // 50ms待ち（何もしない）
+        }
+        case PAW32XX_SCROLL: // 垂直スクロール
+            if (abs(ty) > SCROLL_TICK) {
+                input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
-
-            // ロック解除後50ms間は何もしない
-            if (data->scroll_lock == SCROLL_UNLOCKED && now < data->scroll_unlock_time) {
-                data->scroll_delta_x = 0;
-                data->scroll_delta_y = 0;
-                break;
-            }
-
-            // ロックされていない場合、どちらか大きい方にロック
-            if (data->scroll_lock == SCROLL_UNLOCKED) {
-                if (abs(x) > SCROLL_TICK || abs(y) > SCROLL_TICK) {
-                    if (abs(x) >= abs(y)) {
-                        data->scroll_lock = SCROLL_LOCKED_X;
-                    } else {
-                        data->scroll_lock = SCROLL_LOCKED_Y;
-                    }
-                    data->scroll_lock_expire_time = now + SCROLL_LOCK_MS;
-                }
-            }
-
-            if (data->scroll_lock == SCROLL_LOCKED_X) {
-                data->scroll_delta_x += x;
-                if (abs(data->scroll_delta_x) > SCROLL_TICK) {
-                    input_report_rel(data->dev, INPUT_REL_HWHEEL,
-                        data->scroll_delta_x > 0 ? 1 : -1, true, K_FOREVER);
-                    data->scroll_delta_x = 0;
-                }
-                data->scroll_delta_y = 0;
-            } else if (data->scroll_lock == SCROLL_LOCKED_Y) {
-                data->scroll_delta_y += y;
-                if (abs(data->scroll_delta_y) > SCROLL_TICK) {
-                    input_report_rel(data->dev, INPUT_REL_WHEEL,
-                        data->scroll_delta_y > 0 ? 1 : -1, true, K_FOREVER);
-                    data->scroll_delta_y = 0;
-                }
-                data->scroll_delta_x = 0;
-            }
-
-            // X/Y座標は通常通りレポート
-            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
             break;
-        case PAW32XX_SNIPE:
-            input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-            input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
-            data->scroll_delta_x = 0;
-            data->scroll_delta_y = 0;
+        case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
+            if (abs(ty) > SCROLL_TICK) {
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
+            }
+            break;
+        case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
+            if (abs(ty) > SCROLL_TICK) {
+                // 必要に応じてスケーリング処理を追加
+                input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
+            }
+            break;
+        case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
+            if (abs(ty) > SCROLL_TICK) {
+                // 必要に応じてスケーリング処理を追加
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
+            }
             break;
         default:
             LOG_ERR("Unknown input_mode: %d", input_mode);
-        break;
+            break;
     }
 
     k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
@@ -573,6 +602,9 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, snipe_layers), \
         (static int32_t snipe_layers##n[] = DT_INST_PROP(n, snipe_layers);), \
         (/* 何もしない */)) \
+    COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
+        (static int32_t scroll_horizontal_layers##n[] = DT_INST_PROP(n, scroll_horizontal_layers);), \
+        (/* 何もしない */)) \
     static const struct paw32xx_config paw32xx_cfg_##n = { \
         .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0), \
         .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios), \
@@ -585,6 +617,10 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
             (snipe_layers##n), (NULL)), \
         .snipe_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, snipe_layers), \
             (DT_INST_PROP_LEN(n, snipe_layers)), (0)), \
+        .scroll_horizontal_layers = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
+            (scroll_horizontal_layers##n), (NULL)), \
+        .scroll_horizontal_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
+            (DT_INST_PROP_LEN(n, scroll_horizontal_layers)), (0)), \
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, CONFIG_PAW3222_RES_CPI), \
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
         .force_awake = DT_INST_PROP(n, force_awake), \
