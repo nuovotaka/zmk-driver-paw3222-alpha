@@ -74,6 +74,18 @@ Configure in your shield or board config file (.overlay or .dtsi):
 };
 ```
 
+## Properties
+
+| Property Name            | Type          | Required | Description                                                                                                                  |
+| ------------------------ | ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| irq-gpios                | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                |
+| power-gpios              | phandle-array | No       | GPIO connected to the power control pin.                                                                                     |
+| res-cpi                  | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                      |
+| force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled or disabled at runtime via the `paw32xx_force_awake()` API. |
+| snipe-layers             | array         | No       | List of layer numbers to switch between using the snipes-layers feature.                                                     |
+| scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                     |
+| scroll-horizontal-layers | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                                 |
+
 ## Enable the module in your keyboard's Kconfig file
 
 Add the following to your keyboard's `Kconfig.defconfig`:
@@ -90,17 +102,23 @@ config PAW3222
 endif
 ```
 
-## Properties
+## Add the following in `akdk_bt1_defconfig` on the keyboard
 
-| Property Name            | Type          | Required | Description                                                                                                                  |
-| ------------------------ | ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| irq-gpios                | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                |
-| power-gpios              | phandle-array | No       | GPIO connected to the power control pin.                                                                                     |
-| res-cpi                  | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                      |
-| force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled or disabled at runtime via the `paw32xx_force_awake()` API. |
-| snipe-layers             | array         | No       | List of layer numbers to switch between using the snipes-layers feature.                                                     |
-| scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                     |
-| scroll-horizontal-layers | array         | No       |                                                                                                                              |
+- boards > arm > akdk_bt1
+
+```
+CONFIG_PAW32XX_SCROLL_TICK 10
+CONFIG_PAW32XX_SENSOR_ROTATION_90=y
+```
+
+## CONFIG setting
+
+| config 名                          | 型      | 必須 | 説明                                                     |
+| ---------------------------------- | ------- | ---- | -------------------------------------------------------- |
+| CONFIG_PAW32XX_SENSOR_ROTATION_0   | boolean | No   | マウスセンサー位置：０度、正位置（トラボ左、センサー右） |
+| CONFIG_PAW32XX_SENSOR_ROTATION_90  | boolean | No   | マウスセンサー位置：90 度回転                            |
+| CONFIG_PAW32XX_SENSOR_ROTATION_180 | boolean | No   | マウスセンサー位置：180 度回転                           |
+| CONFIG_PAW32XX_SENSOR_ROTATION_270 | boolean | No   | マウスセンサー位置：270 度回転                           |
 
 ---
 
@@ -181,6 +199,18 @@ manifest:
 };
 ```
 
+## プロパティ
+
+| プロパティ名             | 型            | 必須 | 説明                                                          |
+| ------------------------ | ------------- | ---- | ------------------------------------------------------------- |
+| irq-gpios                | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）             |
+| power-gpios              | phandle-array | No   | 電源制御ピンに接続された GPIO                                 |
+| res-cpi                  | int           | No   | センサーの CPI 解像度（API で実行時変更可）                   |
+| force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）             |
+| snipe-layers             | array         | No   | snipes-layers 機能で切り替えるレイヤー番号のリスト            |
+| scroll-layers            | array         | No   | scroll-layers 機能で切り替えるレイヤー番号のリスト            |
+| scroll-horizontal-layers | array         | No   | scroll-horizontal-layers 機能で切り替えるレイヤー番号のリスト |
+
 ## キーボードの Kconfig ファイルでモジュールを有効化
 
 キーボードの `Kconfig.defconfig` に以下を追加：
@@ -197,14 +227,20 @@ config PAW3222
 endif
 ```
 
-## プロパティ
+## キーボードの `akdk_bt1_defconfig` にて以下を追加
 
-| プロパティ名             | 型            | 必須 | 説明                                               |
-| ------------------------ | ------------- | ---- | -------------------------------------------------- |
-| irq-gpios                | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）  |
-| power-gpios              | phandle-array | No   | 電源制御ピンに接続された GPIO                      |
-| res-cpi                  | int           | No   | センサーの CPI 解像度（API で実行時変更可）        |
-| force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）  |
-| snipe-layers             | array         | No   | snipes-layers 機能で切り替えるレイヤー番号のリスト |
-| scroll-layers            | array         | No   | scroll-layers 機能で切り替えるレイヤー番号のリスト |
-| scroll-horizontal-layers | array         | No   |                                                    |
+- boards > arm > akdk_bt1
+
+```
+CONFIG_PAW32XX_SCROLL_TICK 10
+CONFIG_PAW32XX_SENSOR_ROTATION_90=y
+```
+
+## CONFIG setting
+
+| config 名                          | 型      | 必須 | 説明                                                     |
+| ---------------------------------- | ------- | ---- | -------------------------------------------------------- |
+| CONFIG_PAW32XX_SENSOR_ROTATION_0   | boolean | No   | マウスセンサー位置：０度、正位置（トラボ左、センサー右） |
+| CONFIG_PAW32XX_SENSOR_ROTATION_90  | boolean | No   | マウスセンサー位置：90 度回転                            |
+| CONFIG_PAW32XX_SENSOR_ROTATION_180 | boolean | No   | マウスセンサー位置：180 度回転                           |
+| CONFIG_PAW32XX_SENSOR_ROTATION_270 | boolean | No   | マウスセンサー位置：270 度回転                           |
