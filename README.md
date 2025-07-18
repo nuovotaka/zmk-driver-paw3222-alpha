@@ -67,8 +67,9 @@ Configure in your shield or board config file (.overlay or .dtsi):
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 
         /*   optional features   */
-        // snipe-layers = <4>;
-        // scroll-layers = <5>;
+        // snipe-layers = <5>;
+        // scroll-layers = <6 7 8 9>;
+        // scroll-horizontal-layers = <7 9>;
     };
 };
 ```
@@ -91,14 +92,15 @@ endif
 
 ## Properties
 
-| Property Name | Type          | Required | Description                                                                                                                  |
-| ------------- | ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| irq-gpios     | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                |
-| power-gpios   | phandle-array | No       | GPIO connected to the power control pin.                                                                                     |
-| res-cpi       | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                      |
-| force-awake   | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled or disabled at runtime via the `paw32xx_force_awake()` API. |
-| snipe-layers  | array         | No       | List of layer numbers to switch between using the snipes-layers feature.                                                     |
-| scroll-layers | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                     |
+| Property Name            | Type          | Required | Description                                                                                                                  |
+| ------------------------ | ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| irq-gpios                | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                |
+| power-gpios              | phandle-array | No       | GPIO connected to the power control pin.                                                                                     |
+| res-cpi                  | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                      |
+| force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled or disabled at runtime via the `paw32xx_force_awake()` API. |
+| snipe-layers             | array         | No       | List of layer numbers to switch between using the snipes-layers feature.                                                     |
+| scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                     |
+| scroll-horizontal-layers | array         | No       |                                                                                                                              |
 
 ---
 
@@ -172,8 +174,9 @@ manifest:
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 
         /*   optional features   */
-        // snipe-layers = <4>;
-        // scroll-layers = <5>;
+        // snipe-layers = <5>;
+        // scroll-layers = <6 7 8 9>;
+        // scroll-horizontal-layers = <7 9>;
     };
 };
 ```
@@ -196,11 +199,12 @@ endif
 
 ## プロパティ
 
-| プロパティ名  | 型            | 必須 | 説明                                               |
-| ------------- | ------------- | ---- | -------------------------------------------------- |
-| irq-gpios     | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）  |
-| power-gpios   | phandle-array | No   | 電源制御ピンに接続された GPIO                      |
-| res-cpi       | int           | No   | センサーの CPI 解像度（API で実行時変更可）        |
-| force-awake   | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）  |
-| snipe-layers  | array         | No   | snipes-layers 機能で切り替えるレイヤー番号のリスト |
-| scroll-layers | array         | No   | scroll-layers 機能で切り替えるレイヤー番号のリスト |
+| プロパティ名             | 型            | 必須 | 説明                                               |
+| ------------------------ | ------------- | ---- | -------------------------------------------------- |
+| irq-gpios                | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）  |
+| power-gpios              | phandle-array | No   | 電源制御ピンに接続された GPIO                      |
+| res-cpi                  | int           | No   | センサーの CPI 解像度（API で実行時変更可）        |
+| force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）  |
+| snipe-layers             | array         | No   | snipes-layers 機能で切り替えるレイヤー番号のリスト |
+| scroll-layers            | array         | No   | scroll-layers 機能で切り替えるレイヤー番号のリスト |
+| scroll-horizontal-layers | array         | No   |                                                    |
