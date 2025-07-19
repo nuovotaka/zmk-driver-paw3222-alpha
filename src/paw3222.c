@@ -293,7 +293,6 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         return;
     }
 
-    // 角度に応じて手動で変換
     int16_t tx = x, ty = y;
     switch (cfg->rotation) {
         case 0:
