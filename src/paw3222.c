@@ -47,8 +47,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define PAW32XX_SLEEP3 0x0c
 #define PAW32XX_CPI_X 0x0d
 #define PAW32XX_CPI_Y 0x0e
-#define PAW32XX_DELTA_XY_HI 0x12
-#define PAW32XX_MOUSE_OPTION 0x19
 
 #define PRODUCT_ID_PAW32XX 0x30
 #define SPI_WRITE BIT(7)
@@ -61,8 +59,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define CONFIGURATION_RESET BIT(7)
 #define WRITE_PROTECT_ENABLE 0x00
 #define WRITE_PROTECT_DISABLE 0x5a
-#define MOUSE_OPTION_MOVX_INV_BIT 3
-#define MOUSE_OPTION_MOVY_INV_BIT 4
 
 #define PAW32XX_DATA_SIZE_BITS 8
 
@@ -86,8 +82,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #else
 #define PAW32XX_SENSOR_ROTATION 0
 #endif
-
-#define SCROLL_LOCK_MS 300
 
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
@@ -462,14 +456,7 @@ static int paw32xx_init(const struct device *dev) {
     struct paw32xx_data *data = dev->data;
     int ret;
 
-    data->scroll_delta_x = 0;
-    data->scroll_delta_y = 0;
     data->current_cpi = -1;
-
-    // スクロールロック状態を初期化
-    data->scroll_lock = SCROLL_UNLOCKED;
-    data->scroll_lock_expire_time = 0;
-    data->scroll_unlock_time = 0;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
