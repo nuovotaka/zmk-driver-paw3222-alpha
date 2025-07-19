@@ -50,3 +50,17 @@ properties:
       Initialize the sensor in "force awake" mode. This can also be enabled or
       disabled in runtime by the application using the paw32xx_force_awake()
       API.
+
+  rotation:
+    type: int
+    required: false
+    description: |
+      Physical rotation of the sensor in degrees. (0, 90, 180, 270)
+      If not specified, defaults to the value of CONFIG_PAW32XX_SENSOR_ROTATION.
+
+  scroll-tick:
+    type: int
+    required: false
+    description: |
+      Threshold for scroll movement (delta value above which scroll is triggered).
+      If not specified, defaults to the value of CONFIG_PAW32XX_SCROLL_TICK.

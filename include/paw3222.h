@@ -53,6 +53,8 @@ struct paw32xx_config {
     bool force_awake;
     bool scroll_enabled;
     bool snipe_enabled;
+    uint8_t rotation;      // 追加: 回転角度（0, 90, 180, 270）
+    uint8_t scroll_tick;   // 追加: スクロールtick
 };
 
 /**
