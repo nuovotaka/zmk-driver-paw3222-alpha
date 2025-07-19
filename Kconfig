@@ -19,19 +19,8 @@ config PAW32XX_SCROLL_TICK
     help
       Threshold for scroll movement (delta value above which scroll is triggered)
 
-choice PAW32XX_SENSOR_ROTATION_CHOICE
-    prompt "Sensor rotation angle"
-    default PAW32XX_SENSOR_ROTATION_0
+config PAW32XX_SENSOR_ROTATION
+    int "Sensor rotation angle"
+    default 0
     help
-      Choose the physical rotation of the sensor in degrees.
-
-config PAW32XX_SENSOR_ROTATION_0
-    bool "0 degrees"
-config PAW32XX_SENSOR_ROTATION_90
-    bool "90 degrees"
-config PAW32XX_SENSOR_ROTATION_180
-    bool "180 degrees"
-config PAW32XX_SENSOR_ROTATION_270
-    bool "270 degrees"
-
-endchoice
+      Choose the physical rotation of the sensor in degrees.(0, 90, 180, 270)

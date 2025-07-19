@@ -2,8 +2,9 @@
 
 /*
  * Copyright 2024 Google LLC
- * Modifications Copyright 2025 nuovotaka
  * Modifications Copyright 2025 sekigon-gonnoc
+ *
+ * Modifications Copyright 2025 nuovotaka
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -46,8 +47,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define PAW32XX_SLEEP3 0x0c
 #define PAW32XX_CPI_X 0x0d
 #define PAW32XX_CPI_Y 0x0e
-#define PAW32XX_DELTA_XY_HI 0x12
-#define PAW32XX_MOUSE_OPTION 0x19
 
 #define PRODUCT_ID_PAW32XX 0x30
 #define SPI_WRITE BIT(7)
@@ -60,8 +59,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define CONFIGURATION_RESET BIT(7)
 #define WRITE_PROTECT_ENABLE 0x00
 #define WRITE_PROTECT_DISABLE 0x5a
-#define MOUSE_OPTION_MOVX_INV_BIT 3
-#define MOUSE_OPTION_MOVY_INV_BIT 4
 
 #define PAW32XX_DATA_SIZE_BITS 8
 
@@ -70,23 +67,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_STEP 38
 #define RES_MIN (16 * RES_STEP)
 #define RES_MAX (127 * RES_STEP)
-
-#define SCROLL_TICK CONFIG_PAW32XX_SCROLL_TICK
-
-// prj.confで指定した角度をマクロとして使う
-#if defined(CONFIG_PAW32XX_SENSOR_ROTATION_0)
-#define PAW32XX_SENSOR_ROTATION 0
-#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_90)
-#define PAW32XX_SENSOR_ROTATION 90
-#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_180)
-#define PAW32XX_SENSOR_ROTATION 180
-#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_270)
-#define PAW32XX_SENSOR_ROTATION 270
-#else
-#define PAW32XX_SENSOR_ROTATION 0
-#endif
-
-#define SCROLL_LOCK_MS 300
 
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
@@ -313,9 +293,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         return;
     }
 
-    // 角度に応じて手動で変換
     int16_t tx = x, ty = y;
-    switch (PAW32XX_SENSOR_ROTATION) {
+    switch (cfg->rotation) {
         case 0:
             break;
         case 90: {
@@ -341,9 +320,6 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     // デバッグ出力
     LOG_DBG("x=%d y=%d tx=%d ty=%d", x, y, tx, ty);
 
-    // // 以降はtx, tyを使って処理
-    // input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
-    // input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
 
     enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
@@ -366,23 +342,23 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         }
         case PAW32XX_SCROLL: // 垂直スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
@@ -464,14 +440,7 @@ static int paw32xx_init(const struct device *dev) {
     struct paw32xx_data *data = dev->data;
     int ret;
 
-    data->scroll_delta_x = 0;
-    data->scroll_delta_y = 0;
     data->current_cpi = -1;
-
-    // スクロールロック状態を初期化
-    data->scroll_lock = SCROLL_UNLOCKED;
-    data->scroll_lock_expire_time = 0;
-    data->scroll_unlock_time = 0;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
@@ -625,7 +594,9 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
         .force_awake = DT_INST_PROP(n, force_awake), \
         .scroll_enabled = DT_INST_NODE_HAS_PROP(n, scroll_layers),  \
-        .snipe_enabled = DT_INST_NODE_HAS_PROP(n, snipe_layers) \
+        .snipe_enabled = DT_INST_NODE_HAS_PROP(n, snipe_layers), \
+        .rotation = DT_INST_PROP_OR(n, rotation, CONFIG_PAW32XX_SENSOR_ROTATION),     \
+        .scroll_tick = DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW32XX_SCROLL_TICK)   \
     }; \
     static struct paw32xx_data paw32xx_data_##n; \
     PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action); \
