@@ -342,9 +342,6 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     // デバッグ出力
     LOG_DBG("x=%d y=%d tx=%d ty=%d", x, y, tx, ty);
 
-    // // 以降はtx, tyを使って処理
-    // input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
-    // input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
 
     enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
