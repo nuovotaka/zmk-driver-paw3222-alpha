@@ -68,21 +68,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 #define RES_MIN (16 * RES_STEP)
 #define RES_MAX (127 * RES_STEP)
 
-#define SCROLL_TICK CONFIG_PAW32XX_SCROLL_TICK
-
-// prj.confで指定した角度をマクロとして使う
-#if defined(CONFIG_PAW32XX_SENSOR_ROTATION_0)
-#define PAW32XX_SENSOR_ROTATION 0
-#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_90)
-#define PAW32XX_SENSOR_ROTATION 90
-#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_180)
-#define PAW32XX_SENSOR_ROTATION 180
-#elif defined(CONFIG_PAW32XX_SENSOR_ROTATION_270)
-#define PAW32XX_SENSOR_ROTATION 270
-#else
-#define PAW32XX_SENSOR_ROTATION 0
-#endif
-
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
     PAW32XX_SCROLL,                // 垂直スクロール
@@ -310,7 +295,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
 
     // 角度に応じて手動で変換
     int16_t tx = x, ty = y;
-    switch (PAW32XX_SENSOR_ROTATION) {
+    switch (cfg->rotation) {
         case 0:
             break;
         case 90: {
@@ -358,23 +343,23 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         }
         case PAW32XX_SCROLL: // 垂直スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
-            if (abs(ty) > SCROLL_TICK) {
+            if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
@@ -610,7 +595,9 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
         .force_awake = DT_INST_PROP(n, force_awake), \
         .scroll_enabled = DT_INST_NODE_HAS_PROP(n, scroll_layers),  \
-        .snipe_enabled = DT_INST_NODE_HAS_PROP(n, snipe_layers) \
+        .snipe_enabled = DT_INST_NODE_HAS_PROP(n, snipe_layers), \
+        .rotation = DT_INST_PROP_OR(n, rotation, CONFIG_PAW32XX_SENSOR_ROTATION),     \
+        .scroll_tick = DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW32XX_SCROLL_TICK)   \
     }; \
     static struct paw32xx_data paw32xx_data_##n; \
     PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action); \
