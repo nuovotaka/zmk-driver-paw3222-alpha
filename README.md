@@ -113,12 +113,12 @@ CONFIG_PAW32XX_SENSOR_ROTATION_90=y
 
 ## CONFIG setting
 
-| config 名                          | 型      | 必須 | 説明                                                     |
-| ---------------------------------- | ------- | ---- | -------------------------------------------------------- |
-| CONFIG_PAW32XX_SENSOR_ROTATION_0   | boolean | No   | マウスセンサー位置：０度、正位置（トラボ左、センサー右） |
-| CONFIG_PAW32XX_SENSOR_ROTATION_90  | boolean | No   | マウスセンサー位置：90 度回転                            |
-| CONFIG_PAW32XX_SENSOR_ROTATION_180 | boolean | No   | マウスセンサー位置：180 度回転                           |
-| CONFIG_PAW32XX_SENSOR_ROTATION_270 | boolean | No   | マウスセンサー位置：270 度回転                           |
+| config 名                          | 型      | 必須 | 説明                                                        |
+| ---------------------------------- | ------- | ---- | ----------------------------------------------------------- |
+| CONFIG_PAW32XX_SENSOR_ROTATION_0   | boolean | No   | sensor location：０ deg、default（ball-left、sensor-right） |
+| CONFIG_PAW32XX_SENSOR_ROTATION_90  | boolean | No   | sensor location：90 deg                                     |
+| CONFIG_PAW32XX_SENSOR_ROTATION_180 | boolean | No   | sensor location：180 deg                                    |
+| CONFIG_PAW32XX_SENSOR_ROTATION_270 | boolean | No   | sensor location：270 deg                                    |
 
 ---
 

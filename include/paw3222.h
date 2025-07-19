@@ -1,7 +1,7 @@
 /*
  * Copyright 2024 Google LLC
- * Modifications Copyright 2025 nuovotaka
  * Modifications Copyright 2025 sekigon-gonnoc
+ * Modifications Copyright 2025 nuovotaka
  * Original source code: https://github.com/zephyrproject-rtos/zephyr/blob/19c6240b6865bcb28e1d786d4dcadfb3a02067a0/include/zephyr/input/input_paw32xx.h
  *
  * SPDX-License-Identifier: Apache-2.0
