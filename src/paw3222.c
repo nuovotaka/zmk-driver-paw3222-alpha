@@ -70,11 +70,11 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 
 enum paw32xx_input_mode {
     PAW32XX_MOVE,
-    PAW32XX_SCROLL,                // 垂直スクロール
-    PAW32XX_SCROLL_HORIZONTAL,     // 水平スクロール
-    PAW32XX_SNIPE,                 // 高精細カーソル移動
-    PAW32XX_SCROLL_SNIPE,          // 高精細垂直スクロール
-    PAW32XX_SCROLL_SNIPE_HORIZONTAL // 高精細水平スクロール
+    PAW32XX_SCROLL,                // Vertical scroll
+    PAW32XX_SCROLL_HORIZONTAL,     // Horizontal scroll
+    PAW32XX_SNIPE,                 // High-precision cursor movement (snipe)
+    PAW32XX_SCROLL_SNIPE,          // High-precision vertical scroll
+    PAW32XX_SCROLL_SNIPE_HORIZONTAL // High-precision horizontal scroll
 };
 
 
@@ -200,7 +200,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
     const struct paw32xx_config *cfg = dev->config;
     uint8_t curr_layer = zmk_keymap_highest_layer_active();
 
-    // 水平スクロール
+    // Horizontal scroll
     if (cfg->scroll_horizontal_layers && cfg->scroll_horizontal_layers_len > 0) {
         for (size_t i = 0; i < cfg->scroll_horizontal_layers_len; i++) {
             if (curr_layer == cfg->scroll_horizontal_layers[i]) {
@@ -208,7 +208,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
             }
         }
     }
-    // 垂直スクロール
+    // Vertical scroll
     if (cfg->scroll_layers && cfg->scroll_layers_len > 0) {
         for (size_t i = 0; i < cfg->scroll_layers_len; i++) {
             if (curr_layer == cfg->scroll_layers[i]) {
@@ -216,7 +216,7 @@ static enum paw32xx_input_mode get_input_mode_for_current_layer(const struct dev
             }
         }
     }
-    // 高精細カーソル移動（スナイプ）
+    // High-precision cursor movement (snipe)
     if (cfg->snipe_layers && cfg->snipe_layers_len > 0) {
         for (size_t i = 0; i < cfg->snipe_layers_len; i++) {
             if (curr_layer == cfg->snipe_layers[i]) {
@@ -317,13 +317,13 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
     }
 
-    // デバッグ出力
+    // Debug log
     LOG_DBG("x=%d y=%d tx=%d ty=%d", x, y, tx, ty);
 
 
     enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
-    // CPI切り替え
+    // CPI Switching
     int16_t target_cpi = cfg->res_cpi;
     if (input_mode == PAW32XX_SNIPE && cfg->snipe_cpi > 0) {
         target_cpi = cfg->snipe_cpi;
@@ -334,30 +334,30 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     }
 
     switch (input_mode) {
-        case PAW32XX_MOVE: // 通常カーソル移動
-        case PAW32XX_SNIPE: { // 高精細カーソル移動
-            // X/Y移動を送信（swap/invertはinput-processorsで吸収）
+        case PAW32XX_MOVE: // Normal cursor movement
+        case PAW32XX_SNIPE: { // High-precision cursor movement
+            // Send X/Y movement
             input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
             input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
             break;
         }
-        case PAW32XX_SCROLL: // 垂直スクロール
+        case PAW32XX_SCROLL: // Vertical scroll
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
-        case PAW32XX_SCROLL_HORIZONTAL: // 水平スクロール
+        case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
-        case PAW32XX_SCROLL_SNIPE: // 高精細垂直スクロール
+        case PAW32XX_SCROLL_SNIPE: // High-precision vertical scroll
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
-        case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // 高精細水平スクロール
+        case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // High-precision horizontal scroll
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
@@ -567,13 +567,13 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
 #define PAW32XX_INIT(n) \
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
         (static int32_t scroll_layers##n[] = DT_INST_PROP(n, scroll_layers);), \
-        (/* 何もしない */)) \
+        (/* Do noting */)) \
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, snipe_layers), \
         (static int32_t snipe_layers##n[] = DT_INST_PROP(n, snipe_layers);), \
-        (/* 何もしない */)) \
+        (/* Do noting */)) \
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
         (static int32_t scroll_horizontal_layers##n[] = DT_INST_PROP(n, scroll_horizontal_layers);), \
-        (/* 何もしない */)) \
+        (/* Do noting */)) \
     static const struct paw32xx_config paw32xx_cfg_##n = { \
         .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0), \
         .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios), \
