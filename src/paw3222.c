@@ -80,26 +80,6 @@ enum paw32xx_input_mode {
 };
 
 
-static const struct device *paw32xx_devs[PAW32XX_MAX_DEVS];
-static size_t paw32xx_dev_count = 0;
-
-// 個別トグル: F23→0番目, F24→1番目
-static void paw32xx_input_listener(struct input_event *evt) {
-    if (evt->type == INPUT_EV_KEY && evt->value == 1) {
-        if (evt->code == INPUT_KEY_F23 && paw32xx_dev_count > 0) {
-            if (paw32xx_devs[0] && device_is_ready(paw32xx_devs[0])) {
-                paw32xx_toggle_accel_move_enable(paw32xx_devs[0]);
-            }
-        }
-        if (evt->code == INPUT_KEY_F24 && paw32xx_dev_count > 1) {
-            if (paw32xx_devs[1] && device_is_ready(paw32xx_devs[1])) {
-                paw32xx_toggle_accel_move_enable(paw32xx_devs[1]);
-            }
-        }
-        // 必要に応じてF25, F26...も追加可能
-    }
-}
-
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
     uint8_t shift = 31 - index;
