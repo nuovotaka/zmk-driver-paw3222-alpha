@@ -62,6 +62,8 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 
 #define PAW32XX_DATA_SIZE_BITS 8
 
+#define PAW32XX_MAX_DEVS DT_NUM_INST_STATUS_OKAY(pixart_paw3222)
+
 #define RESET_DELAY_MS 2
 
 #define RES_STEP 38
@@ -77,6 +79,26 @@ enum paw32xx_input_mode {
     PAW32XX_SCROLL_SNIPE_HORIZONTAL // High-precision horizontal scroll
 };
 
+
+static const struct device *paw32xx_devs[PAW32XX_MAX_DEVS];
+static size_t paw32xx_dev_count = 0;
+
+// 個別トグル: F23→0番目, F24→1番目
+static void paw32xx_input_listener(struct input_event *evt) {
+    if (evt->type == INPUT_EV_KEY && evt->value == 1) {
+        if (evt->code == INPUT_KEY_F23 && paw32xx_dev_count > 0) {
+            if (paw32xx_devs[0] && device_is_ready(paw32xx_devs[0])) {
+                paw32xx_toggle_accel_move_enable(paw32xx_devs[0]);
+            }
+        }
+        if (evt->code == INPUT_KEY_F24 && paw32xx_dev_count > 1) {
+            if (paw32xx_devs[1] && device_is_ready(paw32xx_devs[1])) {
+                paw32xx_toggle_accel_move_enable(paw32xx_devs[1]);
+            }
+        }
+        // 必要に応じてF25, F26...も追加可能
+    }
+}
 
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
@@ -262,6 +284,24 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
     return 0;
 }
 
+static int16_t apply_acceleration(const struct paw32xx_config *cfg, int16_t delta) {
+    int16_t abs_delta = abs(delta);
+    int factor = 10; // 1.0 (fixed-point, 小数点1桁)
+    for (size_t i = 0; i < cfg->accel_thresholds_len && i < cfg->accel_factors_len; i++) {
+        if (abs_delta > cfg->accel_thresholds[i]) {
+            factor = cfg->accel_factors[i];
+        }
+    }
+    // factor: 10=1.0, 15=1.5, 25=2.5
+    return (int16_t)((delta * factor) / 10);
+}
+
+void paw32xx_toggle_accel_move_enable(const struct device *dev) {
+    struct paw32xx_data *data = dev->data;
+    data->accel_move_enable_runtime = !data->accel_move_enable_runtime;
+    LOG_INF("加速度カーブ: %s", data->accel_move_enable_runtime ? "ON" : "OFF");
+}
+
 static void paw32xx_motion_timer_handler(struct k_timer *timer) {
     struct paw32xx_data *data = CONTAINER_OF(timer, struct paw32xx_data, motion_timer);
     k_work_submit(&data->motion_work);
@@ -336,28 +376,44 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     switch (input_mode) {
         case PAW32XX_MOVE: // Normal cursor movement
         case PAW32XX_SNIPE: { // High-precision cursor movement
+            if (data->accel_move_enable_runtime) {
+                tx = apply_acceleration(cfg, tx);
+                ty = apply_acceleration(cfg, ty);
+            }
             // Send X/Y movement
             input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
             input_report_rel(data->dev, INPUT_REL_Y, ty, true, K_FOREVER);
             break;
         }
         case PAW32XX_SCROLL: // Vertical scroll
+            if (data->accel_move_enable_runtime) {
+                ty = apply_acceleration(cfg, ty);
+            }
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
+            if (data->accel_move_enable_runtime) {
+                ty = apply_acceleration(cfg, ty);
+            }
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE: // High-precision vertical scroll
+            if (data->accel_move_enable_runtime) {
+                ty = apply_acceleration(cfg, ty);
+            }
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // High-precision horizontal scroll
+            if (data->accel_move_enable_runtime) {
+                ty = apply_acceleration(cfg, ty);
+            }
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
@@ -440,6 +496,11 @@ static int paw32xx_init(const struct device *dev) {
     struct paw32xx_data *data = dev->data;
     int ret;
 
+    // デバイスリストに登録
+    if (paw32xx_dev_count < PAW32XX_MAX_DEVS) {
+        paw32xx_devs[paw32xx_dev_count++] = dev;
+    }
+
     data->current_cpi = -1;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
@@ -448,6 +509,9 @@ static int paw32xx_init(const struct device *dev) {
     }
 
     data->dev = dev;
+
+    data->accel_move_enable_runtime = false;
+    input_listen(paw32xx_input_listener);
 
     k_work_init(&data->motion_work, paw32xx_motion_work_handler);
     k_timer_init(&data->motion_timer, paw32xx_motion_timer_handler, NULL);
@@ -578,6 +642,14 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
         .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0), \
         .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios), \
         .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}), \
+        .accel_move_enable = DT_INST_PROP_OR(n, accel_move_enable, 0), \
+        .accel_scroll_enable = DT_INST_PROP_OR(n, accel_scroll_enable, 0), \
+        .accel_thresholds = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
+            (accel_thresholds##n), (NULL)), \
+        .accel_thresholds_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
+            (DT_INST_PROP_LEN(n, accel_thresholds)), (0)), \
+        .accel_factors = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
+            (accel_factors##n), (NULL)), \
         .scroll_layers = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
             (scroll_layers##n), (NULL)), \
         .scroll_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \

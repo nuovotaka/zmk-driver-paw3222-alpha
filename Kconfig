@@ -1,26 +1,51 @@
+# paw3222 Kconfig
+
+# Copyright 2024 Google LLC
+# Copyright 2025 sekigon-gonnoc
+# Copyright 2025 nuovotaka
+# SPDX-License-Identifier: Apache-2.0
 
 menuconfig PAW3222
-    bool "PAW3222 mouse optical sensor"
-  select SPI
+    bool "PixArt PAW3222 ultra low power mouse sensor"
+    default y
+    select SPI
     help
-      Enable PAW3222 mouse optical sensor.
+      Enable support for the PixArt PAW3222 mouse sensor.
 
 config PAW3222_RES_CPI
-    int "PAW3222 default CPI"
+    int "Default CPI (Counts Per Inch) resolution"
     default 1200
+    range 608 4826
+    help
+      Default CPI (resolution) for the sensor. Can be changed at runtime.
 
 config PAW3222_SNIPE_CPI
-    int "PAW3222 snipe CPI"
+    int "Snipe mode CPI (high-precision mode)"
     default 400
+    range 608 4826
+    help
+      CPI for snipe (high-precision) mode. Can be changed at runtime.
+
+config PAW32XX_SENSOR_ROTATION
+    int "Sensor rotation (degrees)"
+    default 0
+    help
+      Physical rotation of the sensor in degrees. (0, 90, 180, 270)
 
 config PAW32XX_SCROLL_TICK
     int "Scroll tick threshold"
     default 10
     help
-      Threshold for scroll movement (delta value above which scroll is triggered)
+      Threshold for scroll movement (delta value above which scroll is triggered).
 
-config PAW32XX_SENSOR_ROTATION
-    int "Sensor rotation angle"
-    default 0
+config PAW32XX_ACCEL_MOVE_ENABLE
+    bool "Enable acceleration for cursor movement (MOVE/SNIPE)"
+    default n
     help
-      Choose the physical rotation of the sensor in degrees.(0, 90, 180, 270)
+      Enable acceleration curve for cursor movement (MOVE/SNIPE) by default.
+
+config PAW32XX_ACCEL_SCROLL_ENABLE
+    bool "Enable acceleration for scroll movement"
+    default n
+    help
+      Enable acceleration curve for scroll movement (SCROLL/SCROLL_HORIZONTAL/SCROLL_SNIPE) by default.

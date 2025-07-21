@@ -33,6 +33,36 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
 int paw32xx_force_awake(const struct device *dev, bool enable);
 
 /**
+ * @brief Toggle acceleration for cursor movement (MOVE/SNIPE) at runtime
+ *
+ * @param dev paw32xx device.
+ */
+void paw32xx_toggle_accel_move_enable(const struct device *dev);
+
+/**
+ * @brief Toggle acceleration for scroll movement at runtime
+ *
+ * @param dev paw32xx device.
+ */
+void paw32xx_toggle_accel_scroll_enable(const struct device *dev);
+
+/**
+ * @brief Set acceleration for cursor movement (MOVE/SNIPE) at runtime
+ *
+ * @param dev paw32xx device.
+ * @param enable true to enable, false to disable
+ */
+void paw32xx_set_accel_move_enable(const struct device *dev, bool enable);
+
+/**
+ * @brief Set acceleration for scroll movement at runtime
+ *
+ * @param dev paw32xx device.
+ * @param enable true to enable, false to disable
+ */
+void paw32xx_set_accel_scroll_enable(const struct device *dev, bool enable);
+
+/**
  * @brief paw32xx configuration struct
  *
  * This struct should be defined in the driver source, but you may want to
@@ -42,19 +72,31 @@ struct paw32xx_config {
     struct spi_dt_spec spi;
     struct gpio_dt_spec irq_gpio;
     struct gpio_dt_spec power_gpio;
+
+    // Acceleration curve
+    const int32_t *accel_thresholds;
+    size_t accel_thresholds_len;
+    const int32_t *accel_factors; // fixed-point: 1.5→15, 2.5→25 (小数点1桁)
+    size_t accel_factors_len;
+    bool accel_move_enable;
+    bool accel_scroll_enable;
+
+        // Layer config
+    const int32_t *scroll_layers;
     size_t scroll_layers_len;
-    int32_t *scroll_layers;
+    const int32_t *snipe_layers;
     size_t snipe_layers_len;
-    int32_t *snipe_layers;
+    const int32_t *scroll_horizontal_layers;
     size_t scroll_horizontal_layers_len;
-    int32_t *scroll_horizontal_layers;
-    int16_t res_cpi;
-    int16_t snipe_cpi;
+
+    // Sensor config
+    uint16_t res_cpi;
+    uint16_t snipe_cpi;
     bool force_awake;
     bool scroll_enabled;
     bool snipe_enabled;
-    uint8_t rotation;      // 追加: 回転角度（0, 90, 180, 270）
-    uint8_t scroll_tick;   // 追加: スクロールtick
+    uint8_t rotation;      // 回転角度（0, 90, 180, 270）
+    uint8_t scroll_tick;   // スクロールtick
 };
 
 /**
@@ -75,6 +117,9 @@ struct paw32xx_data {
     enum { SCROLL_UNLOCKED, SCROLL_LOCKED_X, SCROLL_LOCKED_Y } scroll_lock;
     int64_t scroll_lock_expire_time;
     int64_t scroll_unlock_time;
+    // Acceleration runtime flags
+    bool accel_move_enable_runtime;
+    bool accel_scroll_enable_runtime;
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */
