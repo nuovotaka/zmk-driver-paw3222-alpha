@@ -74,6 +74,9 @@ struct paw32xx_config {
     struct gpio_dt_spec power_gpio;
 
     // Accel config
+    int accel_threshold;
+    int accel_scale_low;
+    int accel_scale_high;
     bool accel_move_enable;    // カーソル移動への加速度有効/無効
     bool accel_scroll_enable;  // スクロール移動への加速度有効/無効
 
