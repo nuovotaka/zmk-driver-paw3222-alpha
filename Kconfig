@@ -39,13 +39,31 @@ config PAW32XX_SCROLL_TICK
       Threshold for scroll movement (delta value above which scroll is triggered).
 
 config PAW32XX_ACCEL_MOVE_ENABLE
-    bool "Enable acceleration for cursor movement (MOVE/SNIPE)"
+    bool "Enable acceleration for cursor movement"
     default n
     help
-      Enable acceleration curve for cursor movement (MOVE/SNIPE) by default.
+      Enable acceleration scaling for cursor movement if not specified in devicetree.
 
 config PAW32XX_ACCEL_SCROLL_ENABLE
     bool "Enable acceleration for scroll movement"
     default n
     help
-      Enable acceleration curve for scroll movement (SCROLL/SCROLL_HORIZONTAL/SCROLL_SNIPE) by default.
+      Enable acceleration scaling for scroll movement if not specified in devicetree.
+
+config PAW32XX_ACCEL_THRESHOLD
+    int "加速度しきい値 (counts/ms)"
+    default 2
+    help
+      低速/高速を切り替える速度しきい値
+
+config PAW32XX_ACCEL_SCALE_LOW
+    int "低速時の倍率 (x1000)"
+    default 1000
+    help
+      低速時の倍率（1000=1.0倍）
+
+config PAW32XX_ACCEL_SCALE_HIGH
+    int "高速時の倍率 (x1000)"
+    default 2000
+    help
+      高速時の倍率（1000=1.0倍, 2000=2.0倍）

@@ -73,15 +73,11 @@ struct paw32xx_config {
     struct gpio_dt_spec irq_gpio;
     struct gpio_dt_spec power_gpio;
 
-    // Acceleration curve
-    const int32_t *accel_thresholds;
-    size_t accel_thresholds_len;
-    const int32_t *accel_factors; // fixed-point: 1.5→15, 2.5→25 (小数点1桁)
-    size_t accel_factors_len;
-    bool accel_move_enable;
-    bool accel_scroll_enable;
+    // Accel config
+    bool accel_move_enable;    // カーソル移動への加速度有効/無効
+    bool accel_scroll_enable;  // スクロール移動への加速度有効/無効
 
-        // Layer config
+    // Layer config
     const int32_t *scroll_layers;
     size_t scroll_layers_len;
     const int32_t *snipe_layers;
@@ -117,9 +113,8 @@ struct paw32xx_data {
     enum { SCROLL_UNLOCKED, SCROLL_LOCKED_X, SCROLL_LOCKED_Y } scroll_lock;
     int64_t scroll_lock_expire_time;
     int64_t scroll_unlock_time;
-    // Acceleration runtime flags
-    bool accel_move_enable_runtime;
-    bool accel_scroll_enable_runtime;
+    int64_t prev_time_move;
+    int64_t prev_time_scroll;
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */

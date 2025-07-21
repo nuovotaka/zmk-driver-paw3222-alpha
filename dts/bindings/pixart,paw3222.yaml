@@ -65,99 +65,39 @@ properties:
       Threshold for scroll movement (delta value above which scroll is triggered).
       If not specified, defaults to the value of CONFIG_PAW32XX_SCROLL_TICK.
 
-
-
-
-
-# paw3222.yaml
-
-# Copyright 2024 Google LLC
-# Copyright 2025 sekigon-gonnoc
-# Copyright 2025 nuovotaka
-# SPDX-License-Identifier: Apache-2.0
-
-description: PAW32xx ultra low power wireless mouse chip
-
-compatible: "pixart,paw3222"
-
-include: spi-device.yaml
-
-properties:
-  irq-gpios:
-    type: phandle-array
-    required: true
-    description: GPIO connected to the motion pin, active low.
-
-  power-gpios:
-    type: phandle-array
-    required: false
-    description: GPIO connected to the power control pin.
-
-  accel-thresholds:
-    type: array
-    required: false
-    description: |
-      List of delta value thresholds for acceleration. Example: [10, 30]
-
-  accel-factors:
-    type: array
-    required: false
-    description: |
-      List of acceleration factors (fixed-point int, e.g. 15 for 1.5) corresponding to accel-thresholds. Example: [15, 25]
-
   accel-move-enable:
     type: boolean
     required: false
+    default: true
     description: |
-      Enable acceleration curve for cursor movement (MOVE/SNIPE).
+      Enable acceleration scaling for cursor movement.
+      If not specified, defaults to CONFIG_PAW32XX_ACCEL_MOVE_ENABLE.
 
   accel-scroll-enable:
     type: boolean
     required: false
+    default: false
     description: |
-      Enable acceleration curve for scroll movement (SCROLL/SCROLL_HORIZONTAL/SCROLL_SNIPE).
+      Enable acceleration scaling for scroll movement.
+      If not specified, defaults to CONFIG_PAW32XX_ACCEL_SCROLL_ENABLE.
 
-  snipe-layers:
-    type: array
-    required: false
-    description: |
-      List of layer numbers to switch between using the snipe-layers feature.
-
-  scroll-layers:
-    type: array
-    required: false
-    description: |
-      List of layer numbers to switch between using the scroll-layers feature.
-
-  scroll-horizontal-layers:
-    type: array
-    required: false
-    description: |
-      List of layer numbers to switch between using the horizontal scroll feature.
-
-  res-cpi:
-    type: int
-    description: |
-      CPI resolution for the sensor. This can also be changed in runtime using
-      the paw32xx_set_resolution() API.
-
-  force-awake:
-    type: boolean
-    description: |
-      Initialize the sensor in "force awake" mode. This can also be enabled or
-      disabled in runtime by the application using the paw32xx_force_awake()
-      API.
-
-  rotation:
+  accel-threshold:
     type: int
     required: false
     description: |
-      Physical rotation of the sensor in degrees. (0, 90, 180, 270)
-      If not specified, defaults to the value of CONFIG_PAW32XX_SENSOR_ROTATION.
+      Speed threshold (counts/ms) for switching between low and high acceleration scaling.
+      If not specified, defaults to the value of CONFIG_PAW32XX_ACCEL_THRESHOLD.
 
-  scroll-tick:
+  accel-scale-low:
     type: int
     required: false
     description: |
-      Threshold for scroll movement (delta value above which scroll is triggered).
-      If not specified, defaults to the value of CONFIG_PAW32XX_SCROLL_TICK.
+      Scaling factor (x1000) for low speed (below accel-threshold).
+      If not specified, defaults to the value of CONFIG_PAW32XX_ACCEL_SCALE_LOW.
+
+  accel-scale-high:
+    type: int
+    required: false
+    description: |
+      Scaling factor (x1000) for high speed (above accel-threshold).
+      If not specified, defaults to the value of CONFIG_PAW32XX_ACCEL_SCALE_HIGH.

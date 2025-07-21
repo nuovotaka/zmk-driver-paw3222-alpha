@@ -11,6 +11,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
+#include <limits.h>
 
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
@@ -264,22 +266,36 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
     return 0;
 }
 
-static int16_t apply_acceleration(const struct paw32xx_config *cfg, int16_t delta) {
-    int16_t abs_delta = abs(delta);
-    int factor = 10; // 1.0 (fixed-point, 小数点1桁)
-    for (size_t i = 0; i < cfg->accel_thresholds_len && i < cfg->accel_factors_len; i++) {
-        if (abs_delta > cfg->accel_thresholds[i]) {
-            factor = cfg->accel_factors[i];
-        }
-    }
-    // factor: 10=1.0, 15=1.5, 25=2.5
-    return (int16_t)((delta * factor) / 10);
-}
+static void apply_acceleration(const struct paw32xx_config *cfg,
+                               int64_t *prev_time,
+                               int16_t *tx, int16_t *ty)
+{
+    int64_t now = k_uptime_get();
+    int64_t dt = now - *prev_time;
+    if (dt == 0) dt = 1;
 
-void paw32xx_toggle_accel_move_enable(const struct device *dev) {
-    struct paw32xx_data *data = dev->data;
-    data->accel_move_enable_runtime = !data->accel_move_enable_runtime;
-    LOG_INF("加速度カーブ: %s", data->accel_move_enable_runtime ? "ON" : "OFF");
+    int32_t tx32 = *tx;
+    int32_t ty32 = *ty;
+
+    float dist = sqrtf((float)(tx32 * tx32 + ty32 * ty32));
+    float speed = dist / (float)dt;
+
+    int scale = (speed > cfg->accel_threshold)
+        ? cfg->accel_scale_high
+        : cfg->accel_scale_low;
+
+    int32_t tx_scaled = ((int32_t)tx32 * scale + 500) / 1000;
+    int32_t ty_scaled = ((int32_t)ty32 * scale + 500) / 1000;
+
+    if (tx_scaled > INT16_MAX) tx_scaled = INT16_MAX;
+    if (tx_scaled < INT16_MIN) tx_scaled = INT16_MIN;
+    if (ty_scaled > INT16_MAX) ty_scaled = INT16_MAX;
+    if (ty_scaled < INT16_MIN) ty_scaled = INT16_MIN;
+
+    *tx = (int16_t)tx_scaled;
+    *ty = (int16_t)ty_scaled;
+
+    *prev_time = now;
 }
 
 static void paw32xx_motion_timer_handler(struct k_timer *timer) {
@@ -356,9 +372,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     switch (input_mode) {
         case PAW32XX_MOVE: // Normal cursor movement
         case PAW32XX_SNIPE: { // High-precision cursor movement
-            if (data->accel_move_enable_runtime) {
-                tx = apply_acceleration(cfg, tx);
-                ty = apply_acceleration(cfg, ty);
+            if (cfg->accel_move_enable) {
+                apply_acceleration(cfg, &data->prev_time_move, &tx, &ty);
             }
             // Send X/Y movement
             input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
@@ -366,24 +381,24 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         }
         case PAW32XX_SCROLL: // Vertical scroll
-            if (data->accel_move_enable_runtime) {
-                ty = apply_acceleration(cfg, ty);
+            if (cfg->accel_scroll_enable) {
+                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
-            if (data->accel_move_enable_runtime) {
-                ty = apply_acceleration(cfg, ty);
+            if (cfg->accel_scroll_enable) {
+                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
             }
             break;
         case PAW32XX_SCROLL_SNIPE: // High-precision vertical scroll
-            if (data->accel_move_enable_runtime) {
-                ty = apply_acceleration(cfg, ty);
+            if (cfg->accel_scroll_enable) {
+                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
@@ -391,8 +406,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             }
             break;
         case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // High-precision horizontal scroll
-            if (data->accel_move_enable_runtime) {
-                ty = apply_acceleration(cfg, ty);
+            if (cfg->accel_scroll_enable) {
+                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
@@ -624,14 +639,9 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
         .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}), \
         .accel_move_enable = DT_INST_PROP_OR(n, accel_move_enable, CONFIG_PAW32XX_ACCEL_MOVE_ENABLE), \
         .accel_scroll_enable = DT_INST_PROP_OR(n, accel_scroll_enable, CONFIG_PAW32XX_ACCEL_SCROLL_ENABLE), \
-        .accel_thresholds = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
-            (accel_thresholds##n), (NULL)), \
-        .accel_thresholds_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
-            (DT_INST_PROP_LEN(n, accel_thresholds)), (0)), \
-        .accel_factors = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
-            (accel_factors##n), (NULL)), \
-        .accel_factors_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
-            (DT_INST_PROP_LEN(n, accel_factors)), (0)), \
+        .accel_threshold = DT_INST_PROP_OR(n, accel_threshold, CONFIG_PAW32XX_ACCEL_THRESHOLD), \
+        .accel_scale_low = DT_INST_PROP_OR(n, accel_scale_low, CONFIG_PAW32XX_ACCEL_SCALE_LOW), \
+        .accel_scale_high = DT_INST_PROP_OR(n, accel_scale_high, CONFIG_PAW32XX_ACCEL_SCALE_HIGH), \
         .scroll_layers = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
             (scroll_layers##n), (NULL)), \
         .scroll_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
