@@ -1,3 +1,5 @@
+// behavior_accel_toggle.c
+
 #include <zephyr/device.h>
 #include <zmk/behavior.h>
 #include <zmk/keymap.h>
@@ -6,19 +8,23 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-struct accel_toggle_config {
-    const char *dev_label;
-};
+// paw3222.c で定義されているデバイスリストをexternで参照
+extern const struct device *paw32xx_devs[];
+extern int paw32xx_dev_count;
 
 static int behavior_accel_toggle_pressed(struct zmk_behavior_binding *binding,
                                          struct zmk_behavior_binding_event event) {
-    const struct accel_toggle_config *cfg = (const struct accel_toggle_config *)binding->param1;
-    const struct device *paw32xx_dev = device_get_binding(cfg->dev_label);
+    int dev_idx = binding->param1; // キーマップで指定したインデックス
+    if (dev_idx < 0 || dev_idx >= paw32xx_dev_count) {
+        LOG_ERR("paw32xx device index %d out of range", dev_idx);
+        return ZMK_BEHAVIOR_OPAQUE;
+    }
+    const struct device *paw32xx_dev = paw32xx_devs[dev_idx];
     if (paw32xx_dev && device_is_ready(paw32xx_dev)) {
         paw32xx_toggle_accel_move_enable(paw32xx_dev);
-        LOG_INF("paw32xx accel toggle called for %s", cfg->dev_label);
+        LOG_INF("paw32xx accel toggle called for dev_idx=%d", dev_idx);
     } else {
-        LOG_ERR("paw32xx device %s not found or not ready", cfg->dev_label);
+        LOG_ERR("paw32xx device at index %d not found or not ready", dev_idx);
     }
     return ZMK_BEHAVIOR_OPAQUE;
 }
