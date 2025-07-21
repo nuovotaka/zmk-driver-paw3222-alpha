@@ -1,0 +1,9 @@
+description: Toggle accel for paw3222
+compatible: "zmk,behavior-accel-toggle"
+include: base.yaml
+
+properties:
+  "#binding-cells":
+    type: int
+    required: true
+    const: 1
