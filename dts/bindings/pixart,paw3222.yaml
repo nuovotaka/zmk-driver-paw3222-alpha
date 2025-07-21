@@ -79,23 +79,16 @@ properties:
       Enable acceleration scaling for scroll movement.
       If not specified, defaults to CONFIG_PAW32XX_ACCEL_SCROLL_ENABLE.
 
-  accel-threshold:
-    type: int
+  accel-thresholds:
+    type: array
     required: false
     description: |
-      Speed threshold (counts/ms) for switching between low and high acceleration scaling.
-      If not specified, defaults to the value of CONFIG_PAW32XX_ACCEL_THRESHOLD.
+      List of speed thresholds (counts/ms) for multi-level acceleration scaling.
+      Each value defines a threshold for switching to the next acceleration factor.
 
-  accel-scale-low:
-    type: int
+  accel-factors:
+    type: array
     required: false
     description: |
-      Scaling factor (x1000) for low speed (below accel-threshold).
-      If not specified, defaults to the value of CONFIG_PAW32XX_ACCEL_SCALE_LOW.
-
-  accel-scale-high:
-    type: int
-    required: false
-    description: |
-      Scaling factor (x1000) for high speed (above accel-threshold).
-      If not specified, defaults to the value of CONFIG_PAW32XX_ACCEL_SCALE_HIGH.
+      List of acceleration scaling factors (fixed-point, e.g. 1000=1.0, 1500=1.5).
+      Each value corresponds to a threshold in accel-thresholds, plus one for the default (lowest) speed.

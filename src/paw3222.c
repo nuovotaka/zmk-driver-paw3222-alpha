@@ -80,6 +80,9 @@ enum paw32xx_input_mode {
 };
 
 
+static const int32_t default_accel_thresholds[] = {2, 5, 10};
+static const int32_t default_accel_factors[] = {1000, 1000, 1500, 2000};
+
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
     uint8_t shift = 31 - index;
@@ -637,9 +640,14 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
         .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}), \
         .accel_move_enable = DT_INST_PROP_OR(n, accel_move_enable, CONFIG_PAW32XX_ACCEL_MOVE_ENABLE), \
         .accel_scroll_enable = DT_INST_PROP_OR(n, accel_scroll_enable, CONFIG_PAW32XX_ACCEL_SCROLL_ENABLE), \
-        .accel_threshold = DT_INST_PROP_OR(n, accel_threshold, CONFIG_PAW32XX_ACCEL_THRESHOLD), \
-        .accel_scale_low = DT_INST_PROP_OR(n, accel_scale_low, CONFIG_PAW32XX_ACCEL_SCALE_LOW), \
-        .accel_scale_high = DT_INST_PROP_OR(n, accel_scale_high, CONFIG_PAW32XX_ACCEL_SCALE_HIGH), \
+        .accel_thresholds = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
+            (accel_thresholds##n), (default_accel_thresholds)), \
+        .accel_thresholds_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
+            (DT_INST_PROP_LEN(n, accel_thresholds)), (ARRAY_SIZE(default_accel_thresholds))), \
+        .accel_factors = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
+            (accel_factors##n), (default_accel_factors)), \
+        .accel_factors_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
+            (DT_INST_PROP_LEN(n, accel_factors)), (ARRAY_SIZE(default_accel_factors))), \
         .scroll_layers = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
             (scroll_layers##n), (NULL)), \
         .scroll_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
