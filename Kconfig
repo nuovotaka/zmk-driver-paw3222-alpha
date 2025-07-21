@@ -22,7 +22,7 @@ config PAW3222_RES_CPI
 config PAW3222_SNIPE_CPI
     int "Snipe mode CPI (high-precision mode)"
     default 400
-    range 608 4826
+    range 400 4826
     help
       CPI for snipe (high-precision) mode. Can be changed at runtime.
 
