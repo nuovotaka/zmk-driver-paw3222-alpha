@@ -1,5 +1,3 @@
-// behavior_accel_toggle.c
-
 #include <zephyr/device.h>
 #include <zmk/behavior.h>
 #include <zmk/keymap.h>
@@ -14,7 +12,7 @@ struct accel_toggle_config {
 
 static int behavior_accel_toggle_pressed(struct zmk_behavior_binding *binding,
                                          struct zmk_behavior_binding_event event) {
-    const struct accel_toggle_config *cfg = binding->param1;
+    const struct accel_toggle_config *cfg = (const struct accel_toggle_config *)binding->param1;
     const struct device *paw32xx_dev = device_get_binding(cfg->dev_label);
     if (paw32xx_dev && device_is_ready(paw32xx_dev)) {
         paw32xx_toggle_accel_move_enable(paw32xx_dev);
@@ -34,3 +32,5 @@ const struct behavior_driver behavior_accel_toggle = {
     .binding_pressed = behavior_accel_toggle_pressed,
     .binding_released = behavior_accel_toggle_released,
 };
+
+ZMK_BEHAVIOR(behavior_accel_toggle);
