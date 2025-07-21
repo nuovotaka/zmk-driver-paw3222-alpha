@@ -68,7 +68,6 @@ properties:
   accel-move-enable:
     type: boolean
     required: false
-    default: true
     description: |
       Enable acceleration scaling for cursor movement.
       If not specified, defaults to CONFIG_PAW32XX_ACCEL_MOVE_ENABLE.
@@ -76,7 +75,6 @@ properties:
   accel-scroll-enable:
     type: boolean
     required: false
-    default: false
     description: |
       Enable acceleration scaling for scroll movement.
       If not specified, defaults to CONFIG_PAW32XX_ACCEL_SCROLL_ENABLE.
