@@ -64,8 +64,6 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 
 #define PAW32XX_DATA_SIZE_BITS 8
 
-#define PAW32XX_MAX_DEVS DT_NUM_INST_STATUS_OKAY(pixart_paw3222)
-
 #define RESET_DELAY_MS 2
 
 #define RES_STEP 38
@@ -330,7 +328,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     }
 
     int16_t tx = x, ty = y;
-    switch (cfg->rotation) {
+    int rotation = cfg->rotation;
+    switch (rotation) {
         case 0:
             break;
         case 90: {
@@ -491,11 +490,6 @@ static int paw32xx_init(const struct device *dev) {
     struct paw32xx_data *data = dev->data;
     int ret;
 
-    // デバイスリストに登録
-    if (paw32xx_dev_count < PAW32XX_MAX_DEVS) {
-        paw32xx_devs[paw32xx_dev_count++] = dev;
-    }
-
     data->current_cpi = -1;
 
     if (!spi_is_ready_dt(&cfg->spi)) {
@@ -504,8 +498,6 @@ static int paw32xx_init(const struct device *dev) {
     }
 
     data->dev = dev;
-
-    data->accel_move_enable_runtime = false;
 
     k_work_init(&data->motion_work, paw32xx_motion_work_handler);
     k_timer_init(&data->motion_timer, paw32xx_motion_timer_handler, NULL);
