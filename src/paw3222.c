@@ -511,7 +511,6 @@ static int paw32xx_init(const struct device *dev) {
     data->dev = dev;
 
     data->accel_move_enable_runtime = false;
-    input_listen(paw32xx_input_listener);
 
     k_work_init(&data->motion_work, paw32xx_motion_work_handler);
     k_timer_init(&data->motion_timer, paw32xx_motion_timer_handler, NULL);
