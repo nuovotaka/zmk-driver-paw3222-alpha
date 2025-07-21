@@ -264,9 +264,9 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi) {
     return 0;
 }
 
-static void apply_acceleration(const struct paw32xx_config *cfg,
-                               int64_t *prev_time,
-                               int16_t *tx, int16_t *ty)
+static void apply_acceleration_curve(const struct paw32xx_config *cfg,
+                                     int64_t *prev_time,
+                                     int16_t *tx, int16_t *ty)
 {
     int64_t now = k_uptime_get();
     int64_t dt = now - *prev_time;
@@ -278,12 +278,18 @@ static void apply_acceleration(const struct paw32xx_config *cfg,
     float dist = sqrtf((float)(tx32 * tx32 + ty32 * ty32));
     float speed = dist / (float)dt;
 
-    int scale = (speed > cfg->accel_threshold)
-        ? cfg->accel_scale_high
-        : cfg->accel_scale_low;
+    // デフォルト倍率（最初のfactor）
+    int factor = (cfg->accel_factors_len > 0) ? cfg->accel_factors[0] : 1000;
 
-    int32_t tx_scaled = ((int32_t)tx32 * scale + 500) / 1000;
-    int32_t ty_scaled = ((int32_t)ty32 * scale + 500) / 1000;
+    // しきい値を超えるごとにfactorを切り替え
+    for (size_t i = 0; i < cfg->accel_thresholds_len && i + 1 < cfg->accel_factors_len; i++) {
+        if (speed > cfg->accel_thresholds[i]) {
+            factor = cfg->accel_factors[i + 1];
+        }
+    }
+
+    int32_t tx_scaled = ((int32_t)tx32 * factor + 500) / 1000;
+    int32_t ty_scaled = ((int32_t)ty32 * factor + 500) / 1000;
 
     if (tx_scaled > INT16_MAX) tx_scaled = INT16_MAX;
     if (tx_scaled < INT16_MIN) tx_scaled = INT16_MIN;
@@ -372,7 +378,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         case PAW32XX_MOVE: // Normal cursor movement
         case PAW32XX_SNIPE: { // High-precision cursor movement
             if (cfg->accel_move_enable) {
-                apply_acceleration(cfg, &data->prev_time_move, &tx, &ty);
+                apply_acceleration_curve(cfg, &data->prev_time_move, &tx, &ty);
             }
             // Send X/Y movement
             input_report_rel(data->dev, INPUT_REL_X, tx, false, K_NO_WAIT);
@@ -381,7 +387,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
         }
         case PAW32XX_SCROLL: // Vertical scroll
             if (cfg->accel_scroll_enable) {
-                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
+                apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_WHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
@@ -389,7 +395,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
             if (cfg->accel_scroll_enable) {
-                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
+                apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, (ty > 0 ? 1 : -1), true, K_FOREVER);
@@ -397,7 +403,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         case PAW32XX_SCROLL_SNIPE: // High-precision vertical scroll
             if (cfg->accel_scroll_enable) {
-                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
+                apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
@@ -406,7 +412,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // High-precision horizontal scroll
             if (cfg->accel_scroll_enable) {
-                apply_acceleration(cfg, &data->prev_time_scroll, &tx, &ty);
+                apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
                 // 必要に応じてスケーリング処理を追加
