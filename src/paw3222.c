@@ -630,26 +630,29 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
 
 #define PAW32XX_INIT(n) \
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
-        (static int32_t scroll_layers##n[] = DT_INST_PROP(n, scroll_layers);), \
-        (/* Do noting */)) \
+        (static int32_t scroll_layers##n[] = DT_INST_PROP(n, scroll_layers);), ()) \
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, snipe_layers), \
-        (static int32_t snipe_layers##n[] = DT_INST_PROP(n, snipe_layers);), \
-        (/* Do noting */)) \
+        (static int32_t snipe_layers##n[] = DT_INST_PROP(n, snipe_layers);), ()) \
     COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_horizontal_layers), \
-        (static int32_t scroll_horizontal_layers##n[] = DT_INST_PROP(n, scroll_horizontal_layers);), \
-        (/* Do noting */)) \
+        (static int32_t scroll_horizontal_layers##n[] = DT_INST_PROP(n, scroll_horizontal_layers);), ()) \
+    COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
+        (static int32_t accel_thresholds##n[] = DT_INST_PROP(n, accel_thresholds);), ()) \
+    COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
+        (static int32_t accel_factors##n[] = DT_INST_PROP(n, accel_factors);), ()) \
     static const struct paw32xx_config paw32xx_cfg_##n = { \
         .spi = SPI_DT_SPEC_INST_GET(n, PAW32XX_SPI_MODE, 0), \
         .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios), \
         .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}), \
-        .accel_move_enable = DT_INST_PROP_OR(n, accel_move_enable, 0), \
-        .accel_scroll_enable = DT_INST_PROP_OR(n, accel_scroll_enable, 0), \
+        .accel_move_enable = DT_INST_PROP_OR(n, accel_move_enable, CONFIG_PAW32XX_ACCEL_MOVE_ENABLE), \
+        .accel_scroll_enable = DT_INST_PROP_OR(n, accel_scroll_enable, CONFIG_PAW32XX_ACCEL_SCROLL_ENABLE), \
         .accel_thresholds = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
             (accel_thresholds##n), (NULL)), \
         .accel_thresholds_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_thresholds), \
             (DT_INST_PROP_LEN(n, accel_thresholds)), (0)), \
         .accel_factors = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
             (accel_factors##n), (NULL)), \
+        .accel_factors_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, accel_factors), \
+            (DT_INST_PROP_LEN(n, accel_factors)), (0)), \
         .scroll_layers = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
             (scroll_layers##n), (NULL)), \
         .scroll_layers_len = COND_CODE_1(DT_INST_NODE_HAS_PROP(n, scroll_layers), \
