@@ -694,8 +694,6 @@ bool paw32xx_get_accel_scroll_enabled(void) {
     }
     return false;
 }
-    return global_accel_scroll_enabled;
-}
 
 size_t paw32xx_get_device_count(void) {
     return paw32xx_device_count;
