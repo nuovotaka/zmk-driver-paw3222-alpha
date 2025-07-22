@@ -97,10 +97,10 @@ static const int32_t default_accel_factors[] = {1000, 1000, 1500, 2000};
 
 // センサー選択モードのキー処理用
 static uint8_t number_keys[] = {
-    HID_USAGE_KEY_KEYBOARD_1,
-    HID_USAGE_KEY_KEYBOARD_2,
-    HID_USAGE_KEY_KEYBOARD_3,
-    HID_USAGE_KEY_KEYBOARD_4
+    NUMBER_1,
+    NUMBER_2,
+    NUMBER_3,
+    NUMBER_4
 };
 
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
