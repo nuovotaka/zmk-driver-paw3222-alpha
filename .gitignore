@@ -1,0 +1,20 @@
+# Kiro IDE files
+.kiro/
+
+# Build artifacts
+build/
+*.o
+*.a
+*.so
+*.dylib
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

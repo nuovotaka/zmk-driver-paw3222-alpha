@@ -32,35 +32,7 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
  */
 int paw32xx_force_awake(const struct device *dev, bool enable);
 
-/**
- * @brief Toggle acceleration for cursor movement (MOVE/SNIPE) at runtime
- *
- * @param dev paw32xx device.
- */
-void paw32xx_toggle_accel_move_enable(const struct device *dev);
 
-/**
- * @brief Toggle acceleration for scroll movement at runtime
- *
- * @param dev paw32xx device.
- */
-void paw32xx_toggle_accel_scroll_enable(const struct device *dev);
-
-/**
- * @brief Set acceleration for cursor movement (MOVE/SNIPE) at runtime
- *
- * @param dev paw32xx device.
- * @param enable true to enable, false to disable
- */
-void paw32xx_set_accel_move_enable(const struct device *dev, bool enable);
-
-/**
- * @brief Set acceleration for scroll movement at runtime
- *
- * @param dev paw32xx device.
- * @param enable true to enable, false to disable
- */
-void paw32xx_set_accel_scroll_enable(const struct device *dev, bool enable);
 
 /**
  * @brief paw32xx configuration struct
