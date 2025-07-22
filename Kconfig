@@ -9,7 +9,6 @@ menuconfig PAW3222
     bool "PixArt PAW3222 ultra low power mouse sensor"
     default y
     select SPI
-    select ZMK_SPLIT if ZMK_SPLIT
     help
       Enable support for the PixArt PAW3222 mouse sensor.
 
