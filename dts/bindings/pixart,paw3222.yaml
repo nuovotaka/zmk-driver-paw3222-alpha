@@ -50,3 +50,45 @@ properties:
       Initialize the sensor in "force awake" mode. This can also be enabled or
       disabled in runtime by the application using the paw32xx_force_awake()
       API.
+
+  rotation:
+    type: int
+    required: false
+    description: |
+      Physical rotation of the sensor in degrees. (0, 90, 180, 270)
+      If not specified, defaults to the value of CONFIG_PAW32XX_SENSOR_ROTATION.
+
+  scroll-tick:
+    type: int
+    required: false
+    description: |
+      Threshold for scroll movement (delta value above which scroll is triggered).
+      If not specified, defaults to the value of CONFIG_PAW32XX_SCROLL_TICK.
+
+  accel-move-enable:
+    type: boolean
+    required: false
+    description: |
+      Enable acceleration scaling for cursor movement.
+      If not specified, defaults to CONFIG_PAW32XX_ACCEL_MOVE_ENABLE.
+
+  accel-scroll-enable:
+    type: boolean
+    required: false
+    description: |
+      Enable acceleration scaling for scroll movement.
+      If not specified, defaults to CONFIG_PAW32XX_ACCEL_SCROLL_ENABLE.
+
+  accel-thresholds:
+    type: array
+    required: false
+    description: |
+      List of speed thresholds (counts/ms) for multi-level acceleration scaling.
+      Each value defines a threshold for switching to the next acceleration factor.
+
+  accel-factors:
+    type: array
+    required: false
+    description: |
+      List of acceleration scaling factors (fixed-point, e.g. 1000=1.0, 1500=1.5).
+      Each value corresponds to a threshold in accel-thresholds, plus one for the default (lowest) speed.

@@ -1,16 +1,32 @@
 # ZMK PAW3222 Driver
 
-This driver enables the use of the PIXART PAW3222 optical sensor with the ZMK framework.
+This driver enables use of the PIXART PAW3222 optical sensor with the ZMK framework.
+
+---
+
+## Features
+
+- SPI communication with the PAW3222 sensor
+- Supports cursor movement, vertical/horizontal scrolling, and snipe (precision) mode
+- Layer-based input mode switching (move, scroll, snipe)
+- Runtime CPI (resolution) adjustment
+- Power management and low-power modes
+- Optional power GPIO support
+- **Customizable acceleration curve (multi-threshold, multi-factor) for pointer movement**
+
+---
 
 ## Overview
 
-The PAW3222 is a low-power optical mouse sensor suitable for tracking applications such as mice and trackballs. This driver communicates with the PAW3222 sensor via SPI interface.
+The PAW3222 is a low-power optical mouse sensor suitable for tracking applications such as mice and trackballs. This driver communicates with the PAW3222 sensor via SPI interface. It supports flexible configuration via devicetree and Kconfig, and enables advanced usage such as layer-based input mode switching, runtime configuration, and acceleration curve customization.
+
+---
 
 ## Installation
 
-1. Add as a ZMK module in your west.yml:
+1. Add as a ZMK module in your `west.yml`:
 
-```
+```yaml
 manifest:
   remotes:
     - name: zmkfirmware
@@ -20,16 +36,18 @@ manifest:
   projects:
     - name: zmk
       remote: zmkfirmware
-      revision: main
+      revision: v0.2.1
       import: app/west.yml
     - name: zmk-driver-paw3222-alpha
       remote: nuovotaka
       revision: main
 ```
 
+---
+
 ## Device Tree Configuration
 
-Configure in your shield or board config file (.overlay or .dtsi):
+Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`):
 
 ```dts
 &pinctrl {
@@ -66,16 +84,47 @@ Configure in your shield or board config file (.overlay or .dtsi):
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 
-        /*   optional features   */
-        // snipe-layers = <4>;
-        // scroll-layers = <5>;
+        /* Optional features */
+        // accel-move-enable;                   // Enable acceleration for cursor movement
+        // accel-scroll-enable;                 // Enable acceleration for scroll movement
+
+        // accel-thresholds = <2 5 10>;
+        // accel-factors = <1000 1500 2000 2500>; // 1.0x, 1.5x, 2.0x, 2.5x
+
+        // rotation = <0>;    // default: 0 (0, 90, 180, 270)
+        // scroll-tick = <10>;  // default: 10
+        // snipe-layers = <5>;
+        // scroll-layers = <6 7 8 9>;
+        // scroll-horizontal-layers = <7 9>;
     };
 };
 ```
 
-## Enable the module in your keyboard's Kconfig file
+---
 
-Add the following to your keyboard's `Kconfig.defconfig`:
+## Properties
+
+| Property Name            | Type          | Required | Description                                                                                                               |
+| ------------------------ | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| irq-gpios                | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                             |
+| power-gpios              | phandle-array | No       | GPIO connected to the power control pin.                                                                                  |
+| res-cpi                  | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                   |
+| force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API. |
+| rotation                 | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270)                                                             |
+| scroll-tick              | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered).                                              |
+| snipe-layers             | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                   |
+| scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                  |
+| scroll-horizontal-layers | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                              |
+| **accel-move-enable**    | boolean       | No       | Enable acceleration curve for cursor movement.                                                                            |
+| **accel-scroll-enable**  | boolean       | No       | Enable acceleration curve for scroll movement.                                                                            |
+| **accel-thresholds**     | array         | No       | List of speed thresholds (counts/ms) for multi-level acceleration scaling.                                                |
+| **accel-factors**        | array         | No       | List of acceleration scaling factors (fixed-point, e.g. 1000=1.0x, 1500=1.5x, etc).                                       |
+
+---
+
+## Kconfig
+
+Enable the module in your keyboard's `Kconfig.defconfig`:
 
 ```kconfig
 if ZMK_KEYBOARD_YOUR_KEYBOARD
@@ -89,16 +138,139 @@ config PAW3222
 endif
 ```
 
-## Properties
+Also, make sure to add the following line to your `.conf` file to enable input support:
 
-| Property Name | Type          | Required | Description                                                                                                                  |
-| ------------- | ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| irq-gpios     | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                |
-| power-gpios   | phandle-array | No       | GPIO connected to the power control pin.                                                                                     |
-| res-cpi       | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                      |
-| force-awake   | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled or disabled at runtime via the `paw32xx_force_awake()` API. |
-| snipe-layers  | array         | No       | List of layer numbers to switch between using the snipes-layers feature.                                                     |
-| scroll-layers | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                     |
+```
+CONFIG_INPUT=y
+```
+
+---
+
+## Usage
+
+- The driver automatically switches input mode (move, scroll, snipe) based on the active ZMK layer and your devicetree configuration.
+- You can adjust CPI (resolution) at runtime using the API (see below).
+- Use `rotation` to match the sensor’s physical orientation.
+- Configure `scroll-tick` to tune scroll sensitivity.
+- **Configure `accel-thresholds` and `accel-factors` in your device tree for a customizable acceleration curve.**
+- **Use `accel-move-enable` or `accel-scroll-enable` to enable acceleration for cursor or scroll movement.**
+
+---
+
+## Acceleration Curve (Multi-Threshold, Multi-Factor)
+
+The driver supports a customizable acceleration curve for pointer and scroll movement.
+
+### How It Works
+
+- Define multiple speed thresholds and corresponding acceleration factors in your device tree.
+- The driver applies the appropriate scaling factor based on the current movement speed.
+- This enables both fine control for slow movements and rapid cursor travel for fast movements.
+
+#### Example Device Tree Configuration
+
+```dts
+accel-thresholds = <2 5 10>;
+accel-factors = <1000 1500 2000 2500>; // 1.0x, 1.5x, 2.0x, 2.5x
+```
+
+- For speed < 2: 1.0x
+- For speed ≥ 2 and < 5: 1.5x
+- For speed ≥ 5 and < 10: 2.0x
+- For speed ≥ 10: 2.5x
+
+If not specified, sensible defaults are used. If no acceleration curve is configured, the driver falls back to linear scaling (no acceleration).
+
+---
+
+## API Reference
+
+### Change CPI (Resolution)
+
+```c
+int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
+```
+
+- Changes sensor resolution at runtime.
+
+### Force Awake Mode
+
+```c
+int paw32xx_force_awake(const struct device *dev, bool enable);
+```
+
+- Enables/disables "force awake" mode at runtime.
+
+---
+
+## Customization Tips
+
+- **If you prefer finer, more precise control:**  
+  Lower the thresholds and/or reduce the acceleration factors.  
+  This will make the pointer respond more gently, making small, slow movements easier to control.
+
+- **If you prefer more dynamic, faster movement:**  
+  Raise the thresholds and/or increase the acceleration factors, or add more steps.  
+  This will make the pointer move farther when you move the mouse quickly, allowing for rapid cursor movement across the screen.
+
+Adjust these values in your device tree configuration to match your personal preference or application needs.
+
+## Example Tuning for Different Use Cases
+
+### 1. Gaming (FPS, fast aiming)
+
+- **Recommended settings:**
+  ```dts
+  accel-thresholds = <3 7 15>;
+  accel-factors = <1000 1300 1700 2200>; // 1.0x, 1.3x, 1.7x, 2.2x
+  ```
+- **Rationale:**  
+  Lower thresholds and moderate factors allow for precise slow aiming, but enable fast turning when you move the mouse quickly.
+
+---
+
+### 2. CAD / Design Work
+
+- **Recommended settings:**
+  ```dts
+  accel-thresholds = <2 4 8>;
+  accel-factors = <1000 1150 1300 1500>; // 1.0x, 1.15x, 1.3x, 1.5x
+  ```
+- **Rationale:**  
+  Very gentle acceleration preserves fine control for detailed drawing or editing, minimizing overshoot.
+
+---
+
+### 3. Ultra-High-Resolution Monitors (4K/5K+)
+
+- **Recommended settings:**
+  ```dts
+  accel-thresholds = <2 6 16>;
+  accel-factors = <1000 1600 2100 2700>; // 1.0x, 1.6x, 2.1x, 2.7x
+  ```
+- **Rationale:**  
+  Aggressive acceleration ensures you can move the pointer across a large screen area quickly, but still retain control for slow movements.
+
+---
+
+## Troubleshooting
+
+- If the sensor does not work, check SPI and GPIO wiring.
+- Confirm `irq-gpios` and (if used) `power-gpios` are correct.
+- Use Zephyr logging to check for errors at boot.
+- Ensure the ZMK version matches the required version.
+
+---
+
+## License
+
+```
+SPDX-License-Identifier: Apache-2.0
+
+Copyright 2024 Google LLC
+Modifications Copyright 2025 sekigon-gonnoc
+Modifications Copyright 2025 nuovotaka
+```
 
 ---
 
@@ -106,16 +278,41 @@ endif
 
 このドライバは、PIXART PAW3222 光学センサーを ZMK フレームワークで使用できるようにします。
 
+---
+
+## 特徴
+
+- PAW3222 センサーとの SPI 通信
+- カーソル移動、垂直/水平スクロール、高精度スナイプモード対応
+- レイヤーごとの入力モード自動切り替え（移動・スクロール・スナイプ）
+- 実行時 CPI（解像度）変更対応
+- 電源管理・低消費電力モード
+- オプションで電源 GPIO 制御
+
+---
+
 ## 概要
 
-PAW3222 は、マウスやトラックボールなどのトラッキングアプリケーションに適した低消費電力の光学マウスセンサーです。このドライバは SPI インターフェースを介して PAW3222 センサーと通信します。
+PAW3222 は、マウスやトラックボールなどのトラッキング用途に適した低消費電力の光学センサーです。このドライバは SPI インターフェースを介して PAW3222 センサーと通信します。デバイスツリーや Kconfig で柔軟に設定でき、レイヤーごとの入力モード切り替えや実行時設定変更など高度な使い方も可能です。
+
+## 加速度カーブ機能
+
+### 加速度カーブ（多段階しきい値・倍率）
+
+PAW3222 ドライバは、ユーザーがカスタマイズ可能な「加速度カーブ」機能をサポートしています。
+
+#### 加速度カーブとは？
+
+- マウスを速く動かすとカーソルがより大きく動き、ゆっくり動かすと細かく動きます。
+- 精密な操作と大きな移動を両立できる、直感的な操作感を実現します。
+
+---
 
 ## インストール
 
-1. ZMK モジュールとして追加：
+1. `west.yml` に ZMK モジュールとして追加：
 
-```
-# west.yml に追加
+```yaml
 manifest:
   remotes:
     - name: zmkfirmware
@@ -125,16 +322,18 @@ manifest:
   projects:
     - name: zmk
       remote: zmkfirmware
-      revision: main
+      revision: v0.2.1
       import: app/west.yml
     - name: zmk-driver-paw3222-alpha
       remote: nuovotaka
       revision: main
 ```
 
+---
+
 ## デバイスツリー設定
 
-シールドまたはボード設定ファイル（.overlay または.dtsi）で設定：
+シールドまたはボード設定ファイル（`.overlay` または `.dtsi`）でセンサーを設定：
 
 ```dts
 &pinctrl {
@@ -171,16 +370,48 @@ manifest:
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 
-        /*   optional features   */
-        // snipe-layers = <4>;
-        // scroll-layers = <5>;
+        /* オプション設定例 */
+        // accel-move-enable;                   // カーソル移動時加速度を使用する
+        // accel-scroll-enable;                 // スクロール時加速度を使用する
+
+        // accel-thresholds = <2 5 10>;
+        // accel-factors = <1000 1500 2000 2500>; // 1.0倍, 1.5倍, 2.0倍, 2.5倍
+
+        // rotation = <0>;  　   // デフォルト:0　(0, 90, 180, 270)
+        // scroll-tick = <10>;  // デフォルト:10
+        // snipe-layers = <5>;
+        // scroll-layers = <6 7 8 9>;
+        // scroll-horizontal-layers = <7 9>;
     };
 };
 ```
 
-## キーボードの Kconfig ファイルでモジュールを有効化
+---
 
-キーボードの `Kconfig.defconfig` に以下を追加：
+## プロパティ
+
+| プロパティ名             | 型            | 必須 | 説明                                                   |
+| ------------------------ | ------------- | ---- | ------------------------------------------------------ |
+| irq-gpios                | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）      |
+| power-gpios              | phandle-array | No   | 電源制御ピンに接続された GPIO                          |
+| res-cpi                  | int           | No   | センサーの CPI 解像度（API で実行時変更可）            |
+| snipe-cpi                | int           | No   | スナイプモード時の CPI 解像度（API で実行時変更可）    |
+| force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）      |
+| rotation                 | int           | No   | センサーの角度を設定 (0, 90, 180, 270)                 |
+| scroll-tick              | int           | No   | スクロール感度の閾値を設定                             |
+| snipe-layers             | array         | No   | スナイプモードで切り替えるレイヤー番号のリスト         |
+| scroll-layers            | array         | No   | スクロールモードで切り替えるレイヤー番号のリスト       |
+| scroll-horizontal-layers | array         | No   | 水平スクロールモードで切り替えるレイヤー番号のリスト   |
+| **accel-move-enable**    | boolean       | No   | カーソル移動時の加速度カーブ有効フラグ                 |
+| **accel-scroll-enable**  | boolean       | No   | スクロール時の加速度カーブ有効フラグ                   |
+| **accel-thresholds**     | array         | No   | 加速度カーブの速度しきい値（counts/ms）のリスト        |
+| **accel-factors**        | array         | No   | 加速度カーブの倍率リスト（1000=1.0 倍, 1500=1.5 倍等） |
+
+---
+
+## Kconfig
+
+キーボードの `Kconfig.defconfig` に以下を追加してください：
 
 ```kconfig
 if ZMK_KEYBOARD_YOUR_KEYBOARD
@@ -194,13 +425,115 @@ config PAW3222
 endif
 ```
 
-## プロパティ
+さらに、`.conf` ファイルに以下の 1 行を追加して input サポートを有効にしてください：
 
-| プロパティ名  | 型            | 必須 | 説明                                               |
-| ------------- | ------------- | ---- | -------------------------------------------------- |
-| irq-gpios     | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）  |
-| power-gpios   | phandle-array | No   | 電源制御ピンに接続された GPIO                      |
-| res-cpi       | int           | No   | センサーの CPI 解像度（API で実行時変更可）        |
-| force-awake   | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）  |
-| snipe-layers  | array         | No   | snipes-layers 機能で切り替えるレイヤー番号のリスト |
-| scroll-layers | array         | No   | scroll-layers 機能で切り替えるレイヤー番号のリスト |
+```
+CONFIG_INPUT=y
+```
+
+---
+
+## 使い方
+
+- `accel-move-enable`を記述することで、カーソル移動時に加速度が適用されます。
+- `accel-scroll-enable`を記述することで、スクロール時に加速度が適用されます。
+- `accel-thresholds` で複数のしきい値を設定します。
+- `accel-factors`で倍率を設定します。
+- (`accel-thresholds`)と(`accel-factors`)で動作速度に応じて自動的に適切な倍率（加速度）が適用されます。
+- アクティブな ZMK レイヤーとデバイスツリー設定に応じて、入力モード（移動・スクロール・スナイプ）が自動で切り替わります。
+- API を使って実行時に CPI（解像度）を変更できます（下記参照）。
+- `rotation` でセンサーの物理的な向きを調整できます。
+- `scroll-tick` でスクロール感度を調整できます。
+
+---
+
+## API リファレンス
+
+### CPI（解像度）を変更
+
+```c
+int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
+```
+
+- 実行時にセンサー解像度を変更します。
+
+### Force Awake モード
+
+```c
+int paw32xx_force_awake(const struct device *dev, bool enable);
+```
+
+- 実行時に "force awake" モードを有効/無効にします。
+
+---
+
+## カスタマイズのポイント
+
+- **より細かい操作を重視したい場合**  
+  しきい値や倍率（accel-factors）を下げてください。  
+  ポインターの動きがより穏やかになり、ゆっくりした小さな動きがしやすくなります。
+
+- **よりダイナミックな動きを重視したい場合**  
+  しきい値や倍率を上げたり、段階数を増やしてください。  
+  速くマウスを動かしたときにカーソルがより遠くまで移動し、画面全体を素早く移動できます。
+
+これらの値は、用途やお好みに合わせてデバイスツリーで調整してください。
+
+---
+
+## 用途別のチューニング例
+
+### 1. ゲーム用途（FPS など素早いエイム重視）
+
+- **推奨設定例:**
+  ```dts
+  accel-thresholds = <3 7 15>;
+  accel-factors = <1000 1300 1700 2200>; // 1.0倍, 1.3倍, 1.7倍, 2.2倍
+  ```
+- **解説:**  
+  低めのしきい値と適度な倍率で、ゆっくり動かすときは精密なエイム、素早く動かすときは一気に大きく振り向けます。
+
+---
+
+### 2. CAD・設計作業
+
+- **推奨設定例:**
+  ```dts
+  accel-thresholds = <2 4 8>;
+  accel-factors = <1000 1150 1300 1500>; // 1.0倍, 1.15倍, 1.3倍, 1.5倍
+  ```
+- **解説:**  
+  とても緩やかな加速度で、細かい操作や図面の微調整がしやすく、カーソルの飛びすぎを防ぎます。
+
+---
+
+### 3. 超高解像度モニタ（4K/5K 以上）
+
+- **推奨設定例:**
+  ```dts
+  accel-thresholds = <2 6 16>;
+  accel-factors = <1000 1600 2100 2700>; // 1.0倍, 1.6倍, 2.1倍, 2.7倍
+  ```
+- **解説:**  
+  大画面でも素早くカーソルを移動できるよう、しきい値・倍率とも高め。ゆっくり動かせば細かい操作も維持できます。
+
+---
+
+## トラブルシューティング
+
+- センサーが動作しない場合は、SPI や GPIO の配線を確認してください。
+- `irq-gpios` および（使用する場合）`power-gpios` の指定が正しいか確認してください。
+- Zephyr ログで起動時のエラーを確認してください。
+- ZMK のバージョンが要件を満たしているか確認してください。
+
+---
+
+## ライセンス
+
+```
+SPDX-License-Identifier: Apache-2.0
+
+Copyright 2024 Google LLC
+Modifications Copyright 2025 sekigon-gonnoc
+Modifications Copyright 2025 nuovotaka
+```

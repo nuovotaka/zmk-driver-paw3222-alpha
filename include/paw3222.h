@@ -1,7 +1,7 @@
 /*
  * Copyright 2024 Google LLC
- * Modifications Copyright 2025 nuovotaka
  * Modifications Copyright 2025 sekigon-gonnoc
+ * Modifications Copyright 2025 nuovotaka
  * Original source code: https://github.com/zephyrproject-rtos/zephyr/blob/19c6240b6865bcb28e1d786d4dcadfb3a02067a0/include/zephyr/input/input_paw32xx.h
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -33,6 +33,36 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
 int paw32xx_force_awake(const struct device *dev, bool enable);
 
 /**
+ * @brief Toggle acceleration for cursor movement (MOVE/SNIPE) at runtime
+ *
+ * @param dev paw32xx device.
+ */
+void paw32xx_toggle_accel_move_enable(const struct device *dev);
+
+/**
+ * @brief Toggle acceleration for scroll movement at runtime
+ *
+ * @param dev paw32xx device.
+ */
+void paw32xx_toggle_accel_scroll_enable(const struct device *dev);
+
+/**
+ * @brief Set acceleration for cursor movement (MOVE/SNIPE) at runtime
+ *
+ * @param dev paw32xx device.
+ * @param enable true to enable, false to disable
+ */
+void paw32xx_set_accel_move_enable(const struct device *dev, bool enable);
+
+/**
+ * @brief Set acceleration for scroll movement at runtime
+ *
+ * @param dev paw32xx device.
+ * @param enable true to enable, false to disable
+ */
+void paw32xx_set_accel_scroll_enable(const struct device *dev, bool enable);
+
+/**
  * @brief paw32xx configuration struct
  *
  * This struct should be defined in the driver source, but you may want to
@@ -42,17 +72,32 @@ struct paw32xx_config {
     struct spi_dt_spec spi;
     struct gpio_dt_spec irq_gpio;
     struct gpio_dt_spec power_gpio;
+
+    // Accel config
+    const int32_t *accel_thresholds;   // しきい値配列
+    size_t accel_thresholds_len;
+    const int32_t *accel_factors;      // 倍率配列（1000=1.0倍, 1500=1.5倍など）
+    size_t accel_factors_len;
+    
+    bool accel_move_enable;    // カーソル移動への加速度有効/無効
+    bool accel_scroll_enable;  // スクロール移動への加速度有効/無効
+
+    // Layer config
+    const int32_t *scroll_layers;
     size_t scroll_layers_len;
-    int32_t *scroll_layers;
+    const int32_t *snipe_layers;
     size_t snipe_layers_len;
-    int32_t *snipe_layers;
+    const int32_t *scroll_horizontal_layers;
     size_t scroll_horizontal_layers_len;
-    int32_t *scroll_horizontal_layers;
-    int16_t res_cpi;
-    int16_t snipe_cpi;
+
+    // Sensor config
+    uint16_t res_cpi;
+    uint16_t snipe_cpi;
     bool force_awake;
     bool scroll_enabled;
     bool snipe_enabled;
+    uint8_t rotation;      // 回転角度（0, 90, 180, 270）
+    uint8_t scroll_tick;   // スクロールtick
 };
 
 /**
@@ -73,6 +118,8 @@ struct paw32xx_data {
     enum { SCROLL_UNLOCKED, SCROLL_LOCKED_X, SCROLL_LOCKED_Y } scroll_lock;
     int64_t scroll_lock_expire_time;
     int64_t scroll_unlock_time;
+    int64_t prev_time_move;
+    int64_t prev_time_scroll;
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */
