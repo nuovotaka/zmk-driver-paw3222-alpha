@@ -215,6 +215,42 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
 
 Adjust these values in your device tree configuration to match your personal preference or application needs.
 
+## Example Tuning for Different Use Cases
+
+### 1. Gaming (FPS, fast aiming)
+
+- **Recommended settings:**
+  ```dts
+  accel-thresholds = <3 7 15>;
+  accel-factors = <1000 1300 1700 2200>; // 1.0x, 1.3x, 1.7x, 2.2x
+  ```
+- **Rationale:**  
+  Lower thresholds and moderate factors allow for precise slow aiming, but enable fast turning when you move the mouse quickly.
+
+---
+
+### 2. CAD / Design Work
+
+- **Recommended settings:**
+  ```dts
+  accel-thresholds = <2 4 8>;
+  accel-factors = <1000 1150 1300 1500>; // 1.0x, 1.15x, 1.3x, 1.5x
+  ```
+- **Rationale:**  
+  Very gentle acceleration preserves fine control for detailed drawing or editing, minimizing overshoot.
+
+---
+
+### 3. Ultra-High-Resolution Monitors (4K/5K+)
+
+- **Recommended settings:**
+  ```dts
+  accel-thresholds = <2 6 16>;
+  accel-factors = <1000 1600 2100 2700>; // 1.0x, 1.6x, 2.1x, 2.7x
+  ```
+- **Rationale:**  
+  Aggressive acceleration ensures you can move the pointer across a large screen area quickly, but still retain control for slow movements.
+
 ---
 
 ## Troubleshooting
@@ -354,17 +390,22 @@ manifest:
 
 ## プロパティ
 
-| プロパティ名             | 型            | 必須 | 説明                                                 |
-| ------------------------ | ------------- | ---- | ---------------------------------------------------- |
-| irq-gpios                | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）    |
-| power-gpios              | phandle-array | No   | 電源制御ピンに接続された GPIO                        |
-| res-cpi                  | int           | No   | センサーの CPI 解像度（API で実行時変更可）          |
-| force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）    |
-| rotation                 | int           | No   | センサーの角度を設定 (0, 90, 180, 270)               |
-| scroll-tick              | int           | No   | スクロール感度の閾値を設定                           |
-| snipe-layers             | array         | No   | スナイプモードで切り替えるレイヤー番号のリスト       |
-| scroll-layers            | array         | No   | スクロールモードで切り替えるレイヤー番号のリスト     |
-| scroll-horizontal-layers | array         | No   | 水平スクロールモードで切り替えるレイヤー番号のリスト |
+| プロパティ名             | 型            | 必須 | 説明                                                   |
+| ------------------------ | ------------- | ---- | ------------------------------------------------------ |
+| irq-gpios                | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）      |
+| power-gpios              | phandle-array | No   | 電源制御ピンに接続された GPIO                          |
+| res-cpi                  | int           | No   | センサーの CPI 解像度（API で実行時変更可）            |
+| snipe-cpi                | int           | No   | スナイプモード時の CPI 解像度（API で実行時変更可）    |
+| force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）      |
+| rotation                 | int           | No   | センサーの角度を設定 (0, 90, 180, 270)                 |
+| scroll-tick              | int           | No   | スクロール感度の閾値を設定                             |
+| snipe-layers             | array         | No   | スナイプモードで切り替えるレイヤー番号のリスト         |
+| scroll-layers            | array         | No   | スクロールモードで切り替えるレイヤー番号のリスト       |
+| scroll-horizontal-layers | array         | No   | 水平スクロールモードで切り替えるレイヤー番号のリスト   |
+| **accel-move-enable**    | boolean       | No   | カーソル移動時の加速度カーブ有効フラグ                 |
+| **accel-scroll-enable**  | boolean       | No   | スクロール時の加速度カーブ有効フラグ                   |
+| **accel-thresholds**     | array         | No   | 加速度カーブの速度しきい値（counts/ms）のリスト        |
+| **accel-factors**        | array         | No   | 加速度カーブの倍率リスト（1000=1.0 倍, 1500=1.5 倍等） |
 
 ---
 
@@ -437,6 +478,44 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
   速くマウスを動かしたときにカーソルがより遠くまで移動し、画面全体を素早く移動できます。
 
 これらの値は、用途やお好みに合わせてデバイスツリーで調整してください。
+
+---
+
+## 用途別のチューニング例
+
+### 1. ゲーム用途（FPS など素早いエイム重視）
+
+- **推奨設定例:**
+  ```dts
+  accel-thresholds = <3 7 15>;
+  accel-factors = <1000 1300 1700 2200>; // 1.0倍, 1.3倍, 1.7倍, 2.2倍
+  ```
+- **解説:**  
+  低めのしきい値と適度な倍率で、ゆっくり動かすときは精密なエイム、素早く動かすときは一気に大きく振り向けます。
+
+---
+
+### 2. CAD・設計作業
+
+- **推奨設定例:**
+  ```dts
+  accel-thresholds = <2 4 8>;
+  accel-factors = <1000 1150 1300 1500>; // 1.0倍, 1.15倍, 1.3倍, 1.5倍
+  ```
+- **解説:**  
+  とても緩やかな加速度で、細かい操作や図面の微調整がしやすく、カーソルの飛びすぎを防ぎます。
+
+---
+
+### 3. 超高解像度モニタ（4K/5K 以上）
+
+- **推奨設定例:**
+  ```dts
+  accel-thresholds = <2 6 16>;
+  accel-factors = <1000 1600 2100 2700>; // 1.0倍, 1.6倍, 2.1倍, 2.7倍
+  ```
+- **解説:**  
+  大画面でも素早くカーソルを移動できるよう、しきい値・倍率とも高め。ゆっくり動かせば細かい操作も維持できます。
 
 ---
 
