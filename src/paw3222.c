@@ -34,9 +34,7 @@
 #include <zmk/hid.h>
 
 // 分割キーボード機能のサポート
-#ifdef CONFIG_ZMK_SPLIT
 #include <zmk/split/bluetooth/central.h>
-#endif
 
 #include "../include/paw3222.h"
 #include <zmk/events/keycode_state_changed.h>
@@ -908,12 +906,10 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     
     // このMCUで発生したキーイベントのみ処理する
     // 分割キーボードの場合、キーイベントは両方のMCUに送られるため
-#ifdef CONFIG_ZMK_SPLIT
     if (!zmk_split_is_current_endpoint_local()) {
         // このMCUで発生したキーイベントではない場合は処理しない
         return false;
     }
-#endif
     
     // センサー選択モード切り替えキー (F12)
     // F12のキーコードは0x45
@@ -1007,3 +1003,11 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     
     return false;
 }
+// 分割
+キーボード機能が無効な場合のフォールバック
+#ifndef CONFIG_ZMK_SPLIT
+__weak bool zmk_split_is_current_endpoint_local(void) {
+    // 分割キーボード機能が無効な場合は常にtrueを返す
+    return true;
+}
+#endif
