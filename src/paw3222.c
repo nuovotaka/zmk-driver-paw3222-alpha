@@ -1003,8 +1003,7 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     
     return false;
 }
-// 分割
-キーボード機能が無効な場合のフォールバック
+// 分割 キーボード機能が無効な場合のフォールバック
 #ifndef CONFIG_ZMK_SPLIT
 __weak bool zmk_split_is_current_endpoint_local(void) {
     // 分割キーボード機能が無効な場合は常にtrueを返す
