@@ -17,6 +17,7 @@
 #include <zmk/events/keycode_state_changed.h>
 #include <zmk/hid.h>
 #include <zmk/keys.h>
+#include <zmk/endpoints.h>
 
 #define INPUT_EVENT_SCROLL_LAYER_CHANGED 0x1000
 

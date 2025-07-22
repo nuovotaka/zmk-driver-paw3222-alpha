@@ -30,6 +30,7 @@
 #include <zmk/events/keycode_state_changed.h>
 #include <zmk/hid.h>
 #include <zmk/keys.h>
+#include <zmk/endpoints.h>
 #include <zmk/hid.h>
 
 #include "../include/paw3222.h"
@@ -889,6 +890,13 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     
     // センサーがない場合は何もしない
     if (paw32xx_device_count == 0) {
+        return false;
+    }
+    
+    // このMCUで発生したキーイベントのみ処理する
+    // 分割キーボードの場合、キーイベントは両方のMCUに送られるため
+    if (!zmk_split_is_current_endpoint_local()) {
+        // このMCUで発生したキーイベントではない場合は処理しない
         return false;
     }
     
