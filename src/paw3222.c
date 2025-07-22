@@ -813,7 +813,9 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
 
 DT_INST_FOREACH_STATUS_OKAY(PAW32XX_INIT)
 
-#endif // DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)// キーイベント処理関数
+#endif // DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
+
+// キーイベント処理関数
 
 bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     // キーが押されたときのみ処理（リリース時は無視）
