@@ -46,10 +46,6 @@ static bool device_select_mode = false;
 
 // 加速度カーブ機能のグローバル制御変数
 
-
-// センサー選択モード
-static bool device_select_mode = false;
-
 #define DT_DRV_COMPAT pixart_paw3222
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
