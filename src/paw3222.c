@@ -816,7 +816,6 @@ DT_INST_FOREACH_STATUS_OKAY(PAW32XX_INIT)
 #endif // DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 // キーイベント処理関数
-
 bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     // キーが押されたときのみ処理（リリース時は無視）
     if (!event->state) {
@@ -850,8 +849,9 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
         }
         
         // 1-4キー: 特定のセンサーを選択
+        static const uint8_t keys[] = {0x1E, 0x1F, 0x20, 0x21}; // 1,2,3,4キー
         for (int i = 0; i < MIN(paw32xx_device_count, 4); i++) {
-            if (event->keycode == number_keys[i]) {
+            if (event->keycode == keys[i]) {
                 current_device_index = i;
                 LOG_INF("Selected sensor %d", i + 1);
                 return true;
