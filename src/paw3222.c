@@ -486,7 +486,17 @@ int paw32xx_force_awake(const struct device *dev, bool enable) {
 }
 
 int paw32xx_toggle_acceleration(const struct device *dev, bool enable_move, bool enable_scroll) {
+    // デバイスがNULLの場合は何もしない
+    if (dev == NULL) {
+        LOG_WRN("Attempted to toggle acceleration on NULL device");
+        return -EINVAL;
+    }
+    
     struct paw32xx_data *data = dev->data;
+    if (data == NULL) {
+        LOG_WRN("Device data is NULL");
+        return -EINVAL;
+    }
     
     // デバイス固有の設定を更新
     data->accel_move_enabled = enable_move;
@@ -533,9 +543,23 @@ static int paw32xx_configure(const struct device *dev) {
 
 // デバイス登録関数
 static void register_paw32xx_device(const struct device *dev) {
+    if (dev == NULL) {
+        LOG_ERR("Attempted to register NULL device");
+        return;
+    }
+    
     if (paw32xx_device_count < CONFIG_PAW32XX_MAX_DEVICES) {
         struct paw32xx_data *data = dev->data;
+        if (data == NULL) {
+            LOG_ERR("Device data is NULL");
+            return;
+        }
+        
         const struct paw32xx_config *cfg = dev->config;
+        if (cfg == NULL) {
+            LOG_ERR("Device config is NULL");
+            return;
+        }
         
         // デバイスIDを設定
         data->device_id = paw32xx_device_count;
@@ -654,27 +678,59 @@ ZMK_SUBSCRIPTION(paw32xx_keycode_listener, zmk_keycode_state_changed);
 
 // Public API functions for acceleration control
 int paw32xx_set_accel_move_enabled(bool enabled) {
+    // センサーがない場合は何もしない
+    if (paw32xx_device_count == 0) {
+        LOG_WRN("No sensors available");
+        return -ENODEV;
+    }
+    
     // すべてのデバイスの設定を更新
+    int updated = 0;
     for (size_t i = 0; i < paw32xx_device_count; i++) {
         if (paw32xx_devices[i] != NULL) {
             struct paw32xx_data *data = paw32xx_devices[i]->data;
-            data->accel_move_enabled = enabled;
+            if (data != NULL) {
+                data->accel_move_enabled = enabled;
+                updated++;
+            }
         }
     }
-    LOG_INF("PAW3222 Move acceleration: %s", enabled ? "ON" : "OFF");
-    return 0;
+    
+    if (updated > 0) {
+        LOG_INF("PAW3222 Move acceleration: %s (updated %d sensors)", enabled ? "ON" : "OFF", updated);
+        return 0;
+    } else {
+        LOG_WRN("No sensors were updated");
+        return -ENODEV;
+    }
 }
 
 int paw32xx_set_accel_scroll_enabled(bool enabled) {
+    // センサーがない場合は何もしない
+    if (paw32xx_device_count == 0) {
+        LOG_WRN("No sensors available");
+        return -ENODEV;
+    }
+    
     // すべてのデバイスの設定を更新
+    int updated = 0;
     for (size_t i = 0; i < paw32xx_device_count; i++) {
         if (paw32xx_devices[i] != NULL) {
             struct paw32xx_data *data = paw32xx_devices[i]->data;
-            data->accel_scroll_enabled = enabled;
+            if (data != NULL) {
+                data->accel_scroll_enabled = enabled;
+                updated++;
+            }
         }
     }
-    LOG_INF("PAW3222 Scroll acceleration: %s", enabled ? "ON" : "OFF");
-    return 0;
+    
+    if (updated > 0) {
+        LOG_INF("PAW3222 Scroll acceleration: %s (updated %d sensors)", enabled ? "ON" : "OFF", updated);
+        return 0;
+    } else {
+        LOG_WRN("No sensors were updated");
+        return -ENODEV;
+    }
 }
 
 bool paw32xx_get_accel_move_enabled(void) {
@@ -700,9 +756,16 @@ size_t paw32xx_get_device_count(void) {
 }
 
 const struct device *paw32xx_get_device(size_t index) {
+    // センサーがない場合はNULLを返す
+    if (paw32xx_device_count == 0) {
+        return NULL;
+    }
+    
+    // インデックスが範囲外の場合はNULLを返す
     if (index >= paw32xx_device_count) {
         return NULL;
     }
+    
     return paw32xx_devices[index];
 }
 
@@ -822,6 +885,11 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
         return false;
     }
     
+    // センサーがない場合は何もしない
+    if (paw32xx_device_count == 0) {
+        return false;
+    }
+    
     // センサー選択モード切り替えキー
     if (event->keycode == PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE) {
         device_select_mode = !device_select_mode;
@@ -863,30 +931,46 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     if (event->keycode == PAW32XX_TOGGLE_ACCEL_KEYCODE) {
         LOG_INF("Acceleration toggle key pressed");
         
+        // センサーがない場合は何もしない
+        if (paw32xx_device_count == 0) {
+            LOG_WRN("No sensors available to toggle acceleration");
+            return true;
+        }
+        
         if (current_device_index < 0) {
             // すべてのセンサーの設定を切り替え
             for (size_t i = 0; i < paw32xx_device_count; i++) {
                 if (paw32xx_devices[i] != NULL) {
                     struct paw32xx_data *data = paw32xx_devices[i]->data;
-                    data->accel_move_enabled = !data->accel_move_enabled;
-                    data->accel_scroll_enabled = !data->accel_scroll_enabled;
-                    
-                    LOG_INF("Sensor %d acceleration - Move: %s, Scroll: %s", 
-                            i + 1,
-                            data->accel_move_enabled ? "ON" : "OFF",
-                            data->accel_scroll_enabled ? "ON" : "OFF");
+                    if (data != NULL) {
+                        data->accel_move_enabled = !data->accel_move_enabled;
+                        data->accel_scroll_enabled = !data->accel_scroll_enabled;
+                        
+                        LOG_INF("Sensor %d acceleration - Move: %s, Scroll: %s", 
+                                i + 1,
+                                data->accel_move_enabled ? "ON" : "OFF",
+                                data->accel_scroll_enabled ? "ON" : "OFF");
+                    }
                 }
             }
         } else if (current_device_index < paw32xx_device_count) {
             // 特定のセンサーの設定を切り替え
-            struct paw32xx_data *data = paw32xx_devices[current_device_index]->data;
-            data->accel_move_enabled = !data->accel_move_enabled;
-            data->accel_scroll_enabled = !data->accel_scroll_enabled;
-            
-            LOG_INF("Sensor %d acceleration - Move: %s, Scroll: %s",
-                    current_device_index + 1,
-                    data->accel_move_enabled ? "ON" : "OFF",
-                    data->accel_scroll_enabled ? "ON" : "OFF");
+            if (paw32xx_devices[current_device_index] != NULL) {
+                struct paw32xx_data *data = paw32xx_devices[current_device_index]->data;
+                if (data != NULL) {
+                    data->accel_move_enabled = !data->accel_move_enabled;
+                    data->accel_scroll_enabled = !data->accel_scroll_enabled;
+                    
+                    LOG_INF("Sensor %d acceleration - Move: %s, Scroll: %s", 
+                            current_device_index + 1,
+                            data->accel_move_enabled ? "ON" : "OFF",
+                            data->accel_scroll_enabled ? "ON" : "OFF");
+                } else {
+                    LOG_WRN("Selected sensor %d has NULL data", current_device_index + 1);
+                }
+            } else {
+                LOG_WRN("Selected sensor %d is NULL", current_device_index + 1);
+            }
         }
         
         return true;
