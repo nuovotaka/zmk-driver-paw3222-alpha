@@ -27,10 +27,22 @@
 #include <zephyr/sys/util_macro.h>
 
 #include <zmk/keymap.h>
+#include <zmk/events/keycode_state_changed.h>
+#include <zmk/hid.h>
 
 #include "../include/paw3222.h"
+#include <zmk/events/keycode_state_changed.h>
+#include <zmk/event_manager.h>
 
 LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
+
+// 複数センサー対応のためのグローバル変数
+static const struct device *paw32xx_devices[CONFIG_PAW32XX_MAX_DEVICES] = {NULL};
+static size_t paw32xx_device_count = 0;
+static int8_t current_device_index = -1; // -1: すべてのデバイス、0以上: 特定のデバイス
+
+// センサー選択モード
+static bool device_select_mode = false;
 
 #define DT_DRV_COMPAT pixart_paw3222
 
@@ -82,6 +94,14 @@ enum paw32xx_input_mode {
 
 static const int32_t default_accel_thresholds[] = {2, 5, 10};
 static const int32_t default_accel_factors[] = {1000, 1000, 1500, 2000};
+
+// センサー選択モードのキー処理用
+static uint8_t number_keys[] = {
+    HID_USAGE_KEY_KEYBOARD_1,
+    HID_USAGE_KEY_KEYBOARD_2,
+    HID_USAGE_KEY_KEYBOARD_3,
+    HID_USAGE_KEY_KEYBOARD_4
+};
 
 static inline int32_t sign_extend(uint32_t value, uint8_t index) {
     __ASSERT_NO_MSG(index <= 31);
@@ -380,7 +400,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     switch (input_mode) {
         case PAW32XX_MOVE: // Normal cursor movement
         case PAW32XX_SNIPE: { // High-precision cursor movement
-            if (cfg->accel_move_enable) {
+            if (cfg->accel_move_enable && data->accel_move_enabled) {
                 apply_acceleration_curve(cfg, &data->prev_time_move, &tx, &ty);
             }
             // Send X/Y movement
@@ -389,7 +409,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         }
         case PAW32XX_SCROLL: // Vertical scroll
-            if (cfg->accel_scroll_enable) {
+            if (cfg->accel_scroll_enable && data->accel_scroll_enabled) {
                 apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
@@ -397,7 +417,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
-            if (cfg->accel_scroll_enable) {
+            if (cfg->accel_scroll_enable && data->accel_scroll_enabled) {
                 apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
@@ -405,7 +425,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             }
             break;
         case PAW32XX_SCROLL_SNIPE: // High-precision vertical scroll
-            if (cfg->accel_scroll_enable) {
+            if (cfg->accel_scroll_enable && data->accel_scroll_enabled) {
                 apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
@@ -414,7 +434,7 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
             }
             break;
         case PAW32XX_SCROLL_SNIPE_HORIZONTAL: // High-precision horizontal scroll
-            if (cfg->accel_scroll_enable) {
+            if (cfg->accel_scroll_enable && data->accel_scroll_enabled) {
                 apply_acceleration_curve(cfg, &data->prev_time_scroll, &tx, &ty);
             }
             if (abs(ty) > cfg->scroll_tick) {
@@ -463,6 +483,21 @@ int paw32xx_force_awake(const struct device *dev, bool enable) {
     return 0;
 }
 
+int paw32xx_toggle_acceleration(const struct device *dev, bool enable_move, bool enable_scroll) {
+    struct paw32xx_data *data = dev->data;
+    
+    // デバイス固有の設定を更新
+    data->accel_move_enabled = enable_move;
+    data->accel_scroll_enabled = enable_scroll;
+    
+    LOG_INF("Device %d acceleration settings - Move: %s, Scroll: %s", 
+            data->device_id,
+            enable_move ? "enabled" : "disabled", 
+            enable_scroll ? "enabled" : "disabled");
+    
+    return 0;
+}
+
 static int paw32xx_configure(const struct device *dev) {
     const struct paw32xx_config *cfg = dev->config;
     uint8_t val;
@@ -494,12 +529,41 @@ static int paw32xx_configure(const struct device *dev) {
     return 0;
 }
 
+// デバイス登録関数
+static void register_paw32xx_device(const struct device *dev) {
+    if (paw32xx_device_count < CONFIG_PAW32XX_MAX_DEVICES) {
+        struct paw32xx_data *data = dev->data;
+        const struct paw32xx_config *cfg = dev->config;
+        
+        // デバイスIDを設定
+        data->device_id = paw32xx_device_count;
+        
+        // デバイスを登録
+        paw32xx_devices[paw32xx_device_count] = dev;
+        paw32xx_device_count++;
+        
+        // 初期状態では設定に基づいて加速度カーブを設定
+        data->accel_move_enabled = cfg->accel_move_enable;
+        data->accel_scroll_enabled = cfg->accel_scroll_enable;
+        
+        LOG_INF("Registered PAW32XX device %p (ID: %d, total: %d, accel_move: %s, accel_scroll: %s)", 
+                dev, data->device_id, paw32xx_device_count,
+                data->accel_move_enabled ? "ON" : "OFF",
+                data->accel_scroll_enabled ? "ON" : "OFF");
+    } else {
+        LOG_ERR("Maximum number of PAW32XX devices reached (%d)", CONFIG_PAW32XX_MAX_DEVICES);
+    }
+}
+
 static int paw32xx_init(const struct device *dev) {
     const struct paw32xx_config *cfg = dev->config;
     struct paw32xx_data *data = dev->data;
     int ret;
 
     data->current_cpi = -1;
+    
+    // デバイスを登録
+    register_paw32xx_device(dev);
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
@@ -566,6 +630,56 @@ static int paw32xx_init(const struct device *dev) {
     }
 
     return 0;
+}
+
+// ZMKキーイベントリスナー
+static int paw32xx_keycode_listener(const zmk_event_t *eh) {
+    struct zmk_keycode_state_changed *ev = as_zmk_keycode_state_changed(eh);
+    if (ev == NULL) {
+        return ZMK_EV_EVENT_BUBBLE;
+    }
+
+    // キーイベント処理関数を呼び出す
+    if (paw32xx_process_key_event(ev)) {
+        return ZMK_EV_EVENT_HANDLED;
+    }
+
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(paw32xx_keycode_listener, paw32xx_keycode_listener);
+ZMK_SUBSCRIPTION(paw32xx_keycode_listener, zmk_keycode_state_changed);
+
+// Public API functions for acceleration control
+int paw32xx_set_accel_move_enabled(bool enabled) {
+    global_accel_move_enabled = enabled;
+    LOG_INF("PAW3222 Move acceleration: %s", enabled ? "ON" : "OFF");
+    return 0;
+}
+
+int paw32xx_set_accel_scroll_enabled(bool enabled) {
+    global_accel_scroll_enabled = enabled;
+    LOG_INF("PAW3222 Scroll acceleration: %s", enabled ? "ON" : "OFF");
+    return 0;
+}
+
+bool paw32xx_get_accel_move_enabled(void) {
+    return global_accel_move_enabled;
+}
+
+bool paw32xx_get_accel_scroll_enabled(void) {
+    return global_accel_scroll_enabled;
+}
+
+size_t paw32xx_get_device_count(void) {
+    return paw32xx_device_count;
+}
+
+const struct device *paw32xx_get_device(size_t index) {
+    if (index >= paw32xx_device_count) {
+        return NULL;
+    }
+    return paw32xx_devices[index];
 }
 
 #ifdef CONFIG_PM_DEVICE

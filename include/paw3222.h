@@ -13,8 +13,12 @@
 #include <zephyr/device.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <zmk/keymap.h>
+#include <zmk/events/keycode_state_changed.h>
 
 #define INPUT_EVENT_SCROLL_LAYER_CHANGED 0x1000
+#define PAW32XX_TOGGLE_ACCEL_KEYCODE CONFIG_PAW32XX_TOGGLE_ACCEL_KEYCODE // 加速度カーブ切り替えキーコード
+#define PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE // センサー選択モード切り替えキーコード
 
 /**
  * @brief Set resolution on a paw32xx device
@@ -32,6 +36,22 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
  */
 int paw32xx_force_awake(const struct device *dev, bool enable);
 
+/**
+ * @brief Toggle acceleration curve for a paw32xx device
+ *
+ * @param dev paw32xx device.
+ * @param enable_move Whether to enable acceleration for cursor movement.
+ * @param enable_scroll Whether to enable acceleration for scrolling.
+ */
+int paw32xx_toggle_acceleration(const struct device *dev, bool enable_move, bool enable_scroll);
+
+/**
+ * @brief Process key event for paw32xx devices
+ *
+ * @param event Key event to process.
+ * @return true if the event was handled, false otherwise.
+ */
+bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event);
 
 
 /**
@@ -92,6 +112,9 @@ struct paw32xx_data {
     int64_t scroll_unlock_time;
     int64_t prev_time_move;
     int64_t prev_time_scroll;
+    bool accel_move_enabled;    // 実行時に変更可能な加速度カーブ有効フラグ（移動）
+    bool accel_scroll_enabled;  // 実行時に変更可能な加速度カーブ有効フラグ（スクロール）
+    uint8_t device_id;          // 複数センサー対応のためのデバイスID
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */

@@ -67,3 +67,27 @@ config PAW32XX_ACCEL_SCALE_HIGH
     default 2000
     help
       高速時の倍率（1000=1.0倍, 2000=2.0倍）
+config PAW32XX_TOGGLE_ACCEL_KEYCODE
+    hex "加速度カーブ切り替えキーコード"
+    default 0xF0
+    help
+      加速度カーブ機能のオン/オフを切り替えるキーコード（デフォルトはF23）
+
+config PAW32XX_MAX_DEVICES
+    int "最大センサー数"
+    default 4
+    help
+      サポートする最大センサー数
+
+config PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT
+    bool "センサー選択モードを有効にする"
+    default y
+    help
+      複数センサーがある場合に、F24キーでセンサー選択モードを切り替える機能を有効にする
+
+config PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE
+    hex "センサー選択モード切り替えキーコード"
+    default 0xF1
+    depends on PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT
+    help
+      センサー選択モードを切り替えるキーコード（デフォルトはF24）

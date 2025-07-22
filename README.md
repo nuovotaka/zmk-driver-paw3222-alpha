@@ -13,6 +13,8 @@ This driver enables use of the PIXART PAW3222 optical sensor with the ZMK framew
 - Power management and low-power modes
 - Optional power GPIO support
 - **Customizable acceleration curve (multi-threshold, multi-factor) for pointer movement**
+- **Runtime toggle of acceleration curve via function keys**
+- **Support for multiple sensors with individual control**
 
 ---
 
@@ -138,10 +140,14 @@ config PAW3222
 endif
 ```
 
-Also, make sure to add the following line to your `.conf` file to enable input support:
+Also, make sure to add the following lines to your `.conf` file:
 
 ```
 CONFIG_INPUT=y
+CONFIG_PAW32XX_MAX_DEVICES=4  # Maximum number of sensors (default: 4)
+CONFIG_PAW32XX_TOGGLE_ACCEL_KEYCODE=0xF0  # F23 key for toggling acceleration
+CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT=y  # Enable sensor selection mode
+CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE=0xF1  # F24 key for sensor selection mode
 ```
 
 ---
@@ -153,7 +159,7 @@ CONFIG_INPUT=y
 - Use `rotation` to match the sensor’s physical orientation.
 - Configure `scroll-tick` to tune scroll sensitivity.
 - **Configure `accel-thresholds` and `accel-factors` in your device tree for a customizable acceleration curve.**
-- **Use `accel-move-enable` or `accel-scroll-enable` to enable acceleration for cursor or scroll movement.**
+- **Use `accel-move-enable` or `accel-scroll-enable` to enable acceleration for cursor or scroll movement. These properties must be explicitly defined in your device tree for the runtime acceleration toggle feature to work.**
 
 ---
 
@@ -166,6 +172,8 @@ The driver supports a customizable acceleration curve for pointer and scroll mov
 - Define multiple speed thresholds and corresponding acceleration factors in your device tree.
 - The driver applies the appropriate scaling factor based on the current movement speed.
 - This enables both fine control for slow movements and rapid cursor travel for fast movements.
+- **Toggle acceleration on/off at runtime using function keys**
+- **Control multiple sensors individually or all at once**
 
 #### Example Device Tree Configuration
 
@@ -180,6 +188,39 @@ accel-factors = <1000 1500 2000 2500>; // 1.0x, 1.5x, 2.0x, 2.5x
 - For speed ≥ 10: 2.5x
 
 If not specified, sensible defaults are used. If no acceleration curve is configured, the driver falls back to linear scaling (no acceleration).
+
+### Runtime Control of Acceleration
+
+**Important**: To use the acceleration curve feature, you must explicitly define the `accel-move-enable` and/or `accel-scroll-enable` properties in your device tree. Without these properties, the runtime acceleration toggle feature will not work.
+
+```dts
+trackball: trackball@0 {
+    // Other settings...
+    accel-move-enable;    // Required for cursor movement acceleration
+    accel-scroll-enable;  // Required for scroll acceleration
+}
+```
+
+You can toggle the acceleration curve on/off at runtime using function keys:
+
+- **F23 key**: Toggle acceleration for the currently selected sensor(s)
+- **F24 key**: Enter sensor selection mode
+  - In sensor selection mode:
+    - Press **0** to select all sensors
+    - Press **1-4** to select a specific sensor
+    - Press **F24** again to exit selection mode
+
+This allows you to quickly adjust acceleration settings based on your current task without changing your device tree configuration.
+
+### Multiple Sensor Support
+
+The driver supports multiple PAW3222 sensors connected to the same MCU:
+
+- Each sensor can be controlled individually
+- Works with split keyboards (each side manages its own sensors)
+- Up to 4 sensors per MCU are supported by default
+
+For split keyboards, each side's MCU manages its own sensors independently. For example, if you have two sensors on each side of a split keyboard, you can control them separately using the sensor selection mode.
 
 ---
 
@@ -200,6 +241,14 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
 ```
 
 - Enables/disables "force awake" mode at runtime.
+
+### Toggle Acceleration Curve
+
+```c
+int paw32xx_toggle_acceleration(const struct device *dev, bool enable_move, bool enable_scroll);
+```
+
+- Changes acceleration curve settings for a specific sensor.
 
 ---
 
@@ -288,6 +337,9 @@ Modifications Copyright 2025 nuovotaka
 - 実行時 CPI（解像度）変更対応
 - 電源管理・低消費電力モード
 - オプションで電源 GPIO 制御
+- **カスタマイズ可能な加速度カーブ機能（複数しきい値・倍率）**
+- **ファンクションキーによる加速度カーブのオン/オフ切り替え**
+- **複数センサーの個別制御対応**
 
 ---
 
@@ -305,6 +357,29 @@ PAW3222 ドライバは、ユーザーがカスタマイズ可能な「加速度
 
 - マウスを速く動かすとカーソルがより大きく動き、ゆっくり動かすと細かく動きます。
 - 精密な操作と大きな移動を両立できる、直感的な操作感を実現します。
+
+#### 実行時の加速度カーブ制御
+
+ファンクションキーを使って、実行時に加速度カーブのオン/オフを切り替えることができます：
+
+- **F23 キー**: 現在選択されているセンサーの加速度カーブをオン/オフ切り替え
+- **F24 キー**: センサー選択モードに入る
+  - センサー選択モードでは：
+    - **0**キーを押すとすべてのセンサーを選択
+    - **1-4**キーを押すと特定のセンサーを選択
+    - **F24**キーを再度押すと選択モードを終了
+
+これにより、デバイスツリー設定を変更せずに、現在のタスクに応じて加速度設定を素早く調整できます。
+
+#### 複数センサー対応
+
+このドライバは、同じ MCU に接続された複数の PAW3222 センサーをサポートしています：
+
+- 各センサーを個別に制御可能
+- 分割キーボードでも動作（各サイドが自身のセンサーを管理）
+- デフォルトで MCU あたり最大 4 つのセンサーをサポート
+
+分割キーボードの場合、各サイドの MCU が独自のセンサーを独立して管理します。例えば、分割キーボードの両側に 2 つずつセンサーがある場合、センサー選択モードを使用して個別に制御できます。
 
 ---
 
@@ -425,18 +500,22 @@ config PAW3222
 endif
 ```
 
-さらに、`.conf` ファイルに以下の 1 行を追加して input サポートを有効にしてください：
+さらに、`.conf` ファイルに以下の行を追加してください：
 
 ```
 CONFIG_INPUT=y
+CONFIG_PAW32XX_MAX_DEVICES=4  # 最大センサー数（デフォルト: 4）
+CONFIG_PAW32XX_TOGGLE_ACCEL_KEYCODE=0xF0  # 加速度切り替え用F23キー
+CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT=y  # センサー選択モードを有効化
+CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE=0xF1  # センサー選択用F24キー
 ```
 
 ---
 
 ## 使い方
 
-- `accel-move-enable`を記述することで、カーソル移動時に加速度が適用されます。
-- `accel-scroll-enable`を記述することで、スクロール時に加速度が適用されます。
+- `accel-move-enable`を記述することで、カーソル移動時に加速度が適用されます。**この設定は実行時の加速度カーブ機能を使用するために必須です。**
+- `accel-scroll-enable`を記述することで、スクロール時に加速度が適用されます。**この設定は実行時の加速度カーブ機能を使用するために必須です。**
 - `accel-thresholds` で複数のしきい値を設定します。
 - `accel-factors`で倍率を設定します。
 - (`accel-thresholds`)と(`accel-factors`)で動作速度に応じて自動的に適切な倍率（加速度）が適用されます。
@@ -444,6 +523,37 @@ CONFIG_INPUT=y
 - API を使って実行時に CPI（解像度）を変更できます（下記参照）。
 - `rotation` でセンサーの物理的な向きを調整できます。
 - `scroll-tick` でスクロール感度を調整できます。
+
+### 加速度カーブの実行時制御
+
+**重要**: 加速度カーブ機能を使用するには、デバイスツリーで `accel-move-enable` または `accel-scroll-enable` プロパティを明示的に記述する必要があります。これらのプロパティが設定されていない場合、実行時の加速度カーブ機能は動作しません。
+
+```dts
+trackball: trackball@0 {
+    // 他の設定...
+    accel-move-enable;    // カーソル移動時の加速度カーブに必須
+    accel-scroll-enable;  // スクロール時の加速度カーブに必須
+}
+```
+
+ファンクションキーを使って、実行時に加速度カーブのオン/オフを切り替えることができます：
+
+- **F23 キー**: 現在選択されているセンサーの加速度カーブをオン/オフ切り替え
+- **F24 キー**: センサー選択モードに入る
+  - センサー選択モードでは：
+    - **0**キーを押すとすべてのセンサーを選択
+    - **1-4**キーを押すと特定のセンサーを選択
+    - **F24**キーを再度押すと選択モードを終了
+
+### 複数センサー対応
+
+このドライバは、同じ MCU に接続された複数の PAW3222 センサーをサポートしています：
+
+- 各センサーを個別に制御可能
+- 分割キーボードでも動作（各サイドが自身のセンサーを管理）
+- デフォルトで MCU あたり最大 4 つのセンサーをサポート
+
+分割キーボードの場合、各サイドの MCU が独自のセンサーを独立して管理します。例えば、分割キーボードの両側に 2 つずつセンサーがある場合、センサー選択モードを使用して個別に制御できます。
 
 ---
 
@@ -464,6 +574,14 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
 ```
 
 - 実行時に "force awake" モードを有効/無効にします。
+
+### 加速度カーブを切り替え
+
+```c
+int paw32xx_toggle_acceleration(const struct device *dev, bool enable_move, bool enable_scroll);
+```
+
+- 特定のセンサーの加速度カーブ設定を変更します。
 
 ---
 
