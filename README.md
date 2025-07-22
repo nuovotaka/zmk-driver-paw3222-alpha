@@ -203,6 +203,20 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
 
 ---
 
+## Customization Tips
+
+- **If you prefer finer, more precise control:**  
+  Lower the thresholds and/or reduce the acceleration factors.  
+  This will make the pointer respond more gently, making small, slow movements easier to control.
+
+- **If you prefer more dynamic, faster movement:**  
+  Raise the thresholds and/or increase the acceleration factors, or add more steps.  
+  This will make the pointer move farther when you move the mouse quickly, allowing for rapid cursor movement across the screen.
+
+Adjust these values in your device tree configuration to match your personal preference or application needs.
+
+---
+
 ## Troubleshooting
 
 - If the sensor does not work, check SPI and GPIO wiring.
@@ -409,6 +423,20 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
 ```
 
 - 実行時に "force awake" モードを有効/無効にします。
+
+---
+
+## カスタマイズのポイント
+
+- **より細かい操作を重視したい場合**  
+  しきい値や倍率（accel-factors）を下げてください。  
+  ポインターの動きがより穏やかになり、ゆっくりした小さな動きがしやすくなります。
+
+- **よりダイナミックな動きを重視したい場合**  
+  しきい値や倍率を上げたり、段階数を増やしてください。  
+  速くマウスを動かしたときにカーソルがより遠くまで移動し、画面全体を素早く移動できます。
+
+これらの値は、用途やお好みに合わせてデバイスツリーで調整してください。
 
 ---
 
