@@ -12,12 +12,13 @@ This driver enables use of the PIXART PAW3222 optical sensor with the ZMK framew
 - Runtime CPI (resolution) adjustment
 - Power management and low-power modes
 - Optional power GPIO support
+- **Customizable acceleration curve (multi-threshold, multi-factor) for pointer movement**
 
 ---
 
 ## Overview
 
-The PAW3222 is a low-power optical mouse sensor suitable for tracking applications such as mice and trackballs. This driver communicates with the PAW3222 sensor via SPI interface. It supports flexible configuration via devicetree and Kconfig, and enables advanced usage such as layer-based input mode switching and runtime configuration.
+The PAW3222 is a low-power optical mouse sensor suitable for tracking applications such as mice and trackballs. This driver communicates with the PAW3222 sensor via SPI interface. It supports flexible configuration via devicetree and Kconfig, and enables advanced usage such as layer-based input mode switching, runtime configuration, and acceleration curve customization.
 
 ---
 
@@ -84,8 +85,14 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 
         /* Optional features */
-        // rotation = <0>;  　   // default:0　(0, 90, 180, 270)
-        // scroll-tick = <10>;  // default:10
+        // accel-move-enable;                   // Enable acceleration for cursor movement
+        // accel-scroll-enable;                 // Enable acceleration for scroll movement
+
+        // accel-thresholds = <2 5 10>;
+        // accel-factors = <1000 1500 2000 2500>; // 1.0x, 1.5x, 2.0x, 2.5x
+
+        // rotation = <0>;    // default: 0 (0, 90, 180, 270)
+        // scroll-tick = <10>;  // default: 10
         // snipe-layers = <5>;
         // scroll-layers = <6 7 8 9>;
         // scroll-horizontal-layers = <7 9>;
@@ -108,6 +115,10 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
 | snipe-layers             | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                   |
 | scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                  |
 | scroll-horizontal-layers | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                              |
+| **accel-move-enable**    | boolean       | No       | Enable acceleration curve for cursor movement.                                                                            |
+| **accel-scroll-enable**  | boolean       | No       | Enable acceleration curve for scroll movement.                                                                            |
+| **accel-thresholds**     | array         | No       | List of speed thresholds (counts/ms) for multi-level acceleration scaling.                                                |
+| **accel-factors**        | array         | No       | List of acceleration scaling factors (fixed-point, e.g. 1000=1.0x, 1500=1.5x, etc).                                       |
 
 ---
 
@@ -141,6 +152,34 @@ CONFIG_INPUT=y
 - You can adjust CPI (resolution) at runtime using the API (see below).
 - Use `rotation` to match the sensor’s physical orientation.
 - Configure `scroll-tick` to tune scroll sensitivity.
+- **Configure `accel-thresholds` and `accel-factors` in your device tree for a customizable acceleration curve.**
+- **Use `accel-move-enable` or `accel-scroll-enable` to enable acceleration for cursor or scroll movement.**
+
+---
+
+## Acceleration Curve (Multi-Threshold, Multi-Factor)
+
+The driver supports a customizable acceleration curve for pointer and scroll movement.
+
+### How It Works
+
+- Define multiple speed thresholds and corresponding acceleration factors in your device tree.
+- The driver applies the appropriate scaling factor based on the current movement speed.
+- This enables both fine control for slow movements and rapid cursor travel for fast movements.
+
+#### Example Device Tree Configuration
+
+```dts
+accel-thresholds = <2 5 10>;
+accel-factors = <1000 1500 2000 2500>; // 1.0x, 1.5x, 2.0x, 2.5x
+```
+
+- For speed < 2: 1.0x
+- For speed ≥ 2 and < 5: 1.5x
+- For speed ≥ 5 and < 10: 2.0x
+- For speed ≥ 10: 2.5x
+
+If not specified, sensible defaults are used. If no acceleration curve is configured, the driver falls back to linear scaling (no acceleration).
 
 ---
 
@@ -205,6 +244,17 @@ Modifications Copyright 2025 nuovotaka
 ## 概要
 
 PAW3222 は、マウスやトラックボールなどのトラッキング用途に適した低消費電力の光学センサーです。このドライバは SPI インターフェースを介して PAW3222 センサーと通信します。デバイスツリーや Kconfig で柔軟に設定でき、レイヤーごとの入力モード切り替えや実行時設定変更など高度な使い方も可能です。
+
+## 加速度カーブ機能
+
+### 加速度カーブ（多段階しきい値・倍率）
+
+PAW3222 ドライバは、ユーザーがカスタマイズ可能な「加速度カーブ」機能をサポートしています。
+
+#### 加速度カーブとは？
+
+- マウスを速く動かすとカーソルがより大きく動き、ゆっくり動かすと細かく動きます。
+- 精密な操作と大きな移動を両立できる、直感的な操作感を実現します。
 
 ---
 
@@ -271,6 +321,12 @@ manifest:
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 
         /* オプション設定例 */
+        // accel-move-enable;                   // カーソル移動時加速度を使用する
+        // accel-scroll-enable;                 // スクロール時加速度を使用する
+
+        // accel-thresholds = <2 5 10>;
+        // accel-factors = <1000 1500 2000 2500>; // 1.0倍, 1.5倍, 2.0倍, 2.5倍
+
         // rotation = <0>;  　   // デフォルト:0　(0, 90, 180, 270)
         // scroll-tick = <10>;  // デフォルト:10
         // snipe-layers = <5>;
@@ -324,6 +380,11 @@ CONFIG_INPUT=y
 
 ## 使い方
 
+- `accel-move-enable`を記述することで、カーソル移動時に加速度が適用されます。
+- `accel-scroll-enable`を記述することで、スクロール時に加速度が適用されます。
+- `accel-thresholds` で複数のしきい値を設定します。
+- `accel-factors`で倍率を設定します。
+- (`accel-thresholds`)と(`accel-factors`)で動作速度に応じて自動的に適切な倍率（加速度）が適用されます。
 - アクティブな ZMK レイヤーとデバイスツリー設定に応じて、入力モード（移動・スクロール・スナイプ）が自動で切り替わります。
 - API を使って実行時に CPI（解像度）を変更できます（下記参照）。
 - `rotation` でセンサーの物理的な向きを調整できます。
