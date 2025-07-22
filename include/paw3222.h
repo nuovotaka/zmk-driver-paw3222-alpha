@@ -15,17 +15,19 @@
 #include <stdint.h>
 #include <zmk/keymap.h>
 #include <zmk/events/keycode_state_changed.h>
+#include <zmk/hid.h>
+#include <zmk/keys.h>
 
 #define INPUT_EVENT_SCROLL_LAYER_CHANGED 0x1000
 
 // 加速度カーブ切り替えキーコードのデフォルト値
 #ifndef CONFIG_PAW32XX_TOGGLE_ACCEL_KEYCODE
-#define CONFIG_PAW32XX_TOGGLE_ACCEL_KEYCODE 0xF0
+#define CONFIG_PAW32XX_TOGGLE_ACCEL_KEYCODE 0x44  // F11キーコード
 #endif
 
 // センサー選択モード切り替えキーコードのデフォルト値
 #ifndef CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE
-#define CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE 0xF1
+#define CONFIG_PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE 0x45  // F12キーコード
 #endif
 
 #define PAW32XX_TOGGLE_ACCEL_KEYCODE CONFIG_PAW32XX_TOGGLE_ACCEL_KEYCODE // 加速度カーブ切り替えキーコード
