@@ -118,3 +118,8 @@ struct paw32xx_data {
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */
+
+// 最大センサー数の定義
+#ifndef CONFIG_PAW32XX_MAX_DEVICES
+#define CONFIG_PAW32XX_MAX_DEVICES 4
+#endif
