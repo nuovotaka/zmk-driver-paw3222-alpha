@@ -892,10 +892,10 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
         return false;
     }
     
-    // センサー選択モード切り替えキー (Shift+F12)
-    // F12のキーコードは0x45、Shiftが押されているかを確認
+    // センサー選択モード切り替えキー (F12)
+    // F12のキーコードは0x45
     if (event->keycode == PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE || 
-        (event->keycode == 0x45 && (zmk_hid_get_explicit_mods() & MOD_BIT(KC_LSFT)))) {
+        event->keycode == 0x45) {
         device_select_mode = !device_select_mode;
         
         if (device_select_mode) {
@@ -931,11 +931,11 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
         }
     }
     
-    // 加速度カーブ切り替えキー (Shift+F11)
-    // F11のキーコードは0x44、Shiftが押されているかを確認
+    // 加速度カーブ切り替えキー (F11)
+    // F11のキーコードは0x44
     if (event->keycode == PAW32XX_TOGGLE_ACCEL_KEYCODE || 
-        (event->keycode == 0x44 && (zmk_hid_get_explicit_mods() & MOD_BIT(KC_LSFT)))) {
-        LOG_INF("Acceleration toggle key pressed (Shift+F11)");
+        event->keycode == 0x44) {
+        LOG_INF("Acceleration toggle key pressed (F11)");
         
         // センサーがない場合は何もしない
         if (paw32xx_device_count == 0) {

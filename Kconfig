@@ -71,7 +71,7 @@ config PAW32XX_TOGGLE_ACCEL_KEYCODE
     hex "加速度カーブ切り替えキーコード"
     default 0x44
     help
-      加速度カーブ機能のオン/オフを切り替えるキーコード（デフォルトはShift+F11）
+      加速度カーブ機能のオン/オフを切り替えるキーコード（デフォルトはF11）
 
 config PAW32XX_MAX_DEVICES
     int "最大センサー数"
@@ -90,4 +90,4 @@ config PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE
     default 0x45
     depends on PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT
     help
-      センサー選択モードを切り替えるキーコード（デフォルトはShift+F12）
+      センサー選択モードを切り替えるキーコード（デフォルトはF12）
