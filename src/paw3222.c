@@ -42,10 +42,18 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 // 複数センサー対応のためのグローバル変数
 static const struct device *paw32xx_devices[CONFIG_PAW32XX_MAX_DEVICES] = {NULL};
 static size_t paw32xx_device_count = 0;
-static int8_t current_device_index = -1; // -1: すべてのデバイス、0以上: 特定のデバイス
 
-// センサー選択モード
-static bool device_select_mode = false;
+// MCUごとに独立して管理する変数
+typedef struct {
+    int8_t current_device_index; // -1: すべてのデバイス、0以上: 特定のデバイス
+    bool device_select_mode;     // センサー選択モード
+} paw32xx_mcu_state_t;
+
+// 各MCUで独立して管理される状態
+static paw32xx_mcu_state_t mcu_state = {
+    .current_device_index = -1, // デフォルトはすべてのデバイス
+    .device_select_mode = false // デフォルトはセンサー選択モードOFF
+};
 
 // 加速度カーブ機能のグローバル制御変数
 
@@ -904,26 +912,26 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
     // F12のキーコードは0x45
     if (event->keycode == PAW32XX_TOGGLE_ACCEL_DEVICE_SELECT_KEYCODE || 
         event->keycode == 0x45) {
-        device_select_mode = !device_select_mode;
+        mcu_state.device_select_mode = !mcu_state.device_select_mode;
         
-        if (device_select_mode) {
+        if (mcu_state.device_select_mode) {
             LOG_INF("Sensor select mode: ON - Press 1-%d to select sensor, 0 for all", paw32xx_device_count);
-            current_device_index = -1; // デフォルトはすべてのデバイス
+            mcu_state.current_device_index = -1; // デフォルトはすべてのデバイス
         } else {
-            if (current_device_index < 0) {
+            if (mcu_state.current_device_index < 0) {
                 LOG_INF("Sensor select mode: OFF - Currently affecting ALL sensors");
             } else {
-                LOG_INF("Sensor select mode: OFF - Currently affecting sensor %d", current_device_index + 1);
+                LOG_INF("Sensor select mode: OFF - Currently affecting sensor %d", mcu_state.current_device_index + 1);
             }
         }
         return true;
     }
     
     // センサー選択モードの場合、数字キーでセンサーを選択
-    if (device_select_mode) {
+    if (mcu_state.device_select_mode) {
         // 0キー: すべてのセンサーを選択
         if (event->keycode == 0x27) { // 0キー
-            current_device_index = -1;
+            mcu_state.current_device_index = -1;
             LOG_INF("Selected ALL sensors");
             return true;
         }
@@ -932,7 +940,7 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
         static const uint8_t keys[] = {0x1E, 0x1F, 0x20, 0x21}; // 1,2,3,4キー
         for (int i = 0; i < MIN(paw32xx_device_count, 4); i++) {
             if (event->keycode == keys[i]) {
-                current_device_index = i;
+                mcu_state.current_device_index = i;
                 LOG_INF("Selected sensor %d", i + 1);
                 return true;
             }
@@ -951,7 +959,7 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
             return true;
         }
         
-        if (current_device_index < 0) {
+        if (mcu_state.current_device_index < 0) {
             // すべてのセンサーの設定を切り替え
             for (size_t i = 0; i < paw32xx_device_count; i++) {
                 if (paw32xx_devices[i] != NULL) {
@@ -967,23 +975,23 @@ bool paw32xx_process_key_event(const struct zmk_keycode_state_changed *event) {
                     }
                 }
             }
-        } else if (current_device_index < paw32xx_device_count) {
+        } else if (mcu_state.current_device_index < paw32xx_device_count) {
             // 特定のセンサーの設定を切り替え
-            if (paw32xx_devices[current_device_index] != NULL) {
-                struct paw32xx_data *data = paw32xx_devices[current_device_index]->data;
+            if (paw32xx_devices[mcu_state.current_device_index] != NULL) {
+                struct paw32xx_data *data = paw32xx_devices[mcu_state.current_device_index]->data;
                 if (data != NULL) {
                     data->accel_move_enabled = !data->accel_move_enabled;
                     data->accel_scroll_enabled = !data->accel_scroll_enabled;
                     
                     LOG_INF("Sensor %d acceleration - Move: %s, Scroll: %s", 
-                            current_device_index + 1,
+                            mcu_state.current_device_index + 1,
                             data->accel_move_enabled ? "ON" : "OFF",
                             data->accel_scroll_enabled ? "ON" : "OFF");
                 } else {
-                    LOG_WRN("Selected sensor %d has NULL data", current_device_index + 1);
+                    LOG_WRN("Selected sensor %d has NULL data", mcu_state.current_device_index + 1);
                 }
             } else {
-                LOG_WRN("Selected sensor %d is NULL", current_device_index + 1);
+                LOG_WRN("Selected sensor %d is NULL", mcu_state.current_device_index + 1);
             }
         }
         
