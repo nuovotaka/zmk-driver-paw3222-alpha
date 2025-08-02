@@ -134,8 +134,8 @@ static int paw32xx_init(const struct device *dev) {
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, CONFIG_PAW3222_RES_CPI), \
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
         .force_awake = DT_INST_PROP(n, force_awake), \
-        .rotation = DT_INST_PROP_OR(n, rotation, CONFIG_PAW32XX_SENSOR_ROTATION),     \
-        .scroll_tick = DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW32XX_SCROLL_TICK)   \
+        .rotation = DT_INST_PROP_OR(n, rotation, CONFIG_PAW3222_SENSOR_ROTATION),     \
+        .scroll_tick = DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW3222_SCROLL_TICK)   \
     }; \
     static struct paw32xx_data paw32xx_data_##n; \
     PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action); \
