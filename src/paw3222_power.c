@@ -111,7 +111,6 @@ int paw32xx_configure(const struct device *dev) {
 
 #ifdef CONFIG_PM_DEVICE
 int paw32xx_pm_action(const struct device *dev, enum pm_device_action action) {
-    const struct paw32xx_config *cfg = dev->config;
     int ret;
     uint8_t val;
 

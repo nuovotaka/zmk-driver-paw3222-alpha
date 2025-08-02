@@ -7,5 +7,11 @@ if(CONFIG_PAW3222)
         src/paw3222_power.c
     )
     zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-    zephyr_library_include_directories(${ZEPHYR_ZMKAPP_MODULE_DIR}/include)
+    
+    # Add ZMK app include directory
+    if(EXISTS ${CMAKE_SOURCE_DIR}/app/include)
+        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/app/include)
+    elseif(EXISTS ${CMAKE_SOURCE_DIR}/../zmk/app/include)
+        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/../zmk/app/include)
+    endif()
 endif()
