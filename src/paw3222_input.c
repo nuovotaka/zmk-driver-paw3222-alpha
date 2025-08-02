@@ -14,7 +14,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
-#include <zmk/keymap.h>
+// Temporary workaround - declare the function directly
+uint8_t zmk_keymap_highest_layer_active(void);
 
 #include "paw3222.h"
 #include "paw3222_regs.h"

@@ -8,15 +8,8 @@ if(CONFIG_PAW3222)
     )
     zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
     
-    # Add ZMK app include directory
-    if(EXISTS ${CMAKE_SOURCE_DIR}/app/include)
-        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/app/include)
-    elseif(EXISTS ${CMAKE_SOURCE_DIR}/../zmk/app/include)
-        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/../zmk/app/include)
-    endif()
-    
-    # Also try the direct path from build log
-    if(EXISTS ${CMAKE_SOURCE_DIR}/zmk/app/include)
-        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/zmk/app/include)
-    endif()
+    # Add ZMK app include directory - use all possible paths
+    zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/zmk/app/include)
+    zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/app/include)
+    zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/../zmk/app/include)
 endif()
