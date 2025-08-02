@@ -16,10 +16,10 @@
 
 #include <zmk/keymap.h>
 
-#include <paw3222.h>
-#include <paw3222_regs.h>
-#include <paw3222_spi.h>
-#include <paw3222_input.h>
+#include "paw3222.h"
+#include "paw3222_regs.h"
+#include "paw3222_spi.h"
+#include "paw3222_input.h"
 
 LOG_MODULE_DECLARE(paw32xx);
 

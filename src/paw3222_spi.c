@@ -12,9 +12,9 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
 
-#include <paw3222.h>
-#include <paw3222_regs.h>
-#include <paw3222_spi.h>
+#include "paw3222.h"
+#include "paw3222_regs.h"
+#include "paw3222_spi.h"
 
 LOG_MODULE_DECLARE(paw32xx);
 

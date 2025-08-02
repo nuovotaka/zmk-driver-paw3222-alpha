@@ -15,10 +15,10 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/devicetree.h>
 
-#include <paw3222.h>
-#include <paw3222_regs.h>
-#include <paw3222_spi.h>
-#include <paw3222_power.h>
+#include "paw3222.h"
+#include "paw3222_regs.h"
+#include "paw3222_spi.h"
+#include "paw3222_power.h"
 
 LOG_MODULE_DECLARE(paw32xx);
 

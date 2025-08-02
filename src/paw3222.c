@@ -18,9 +18,9 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/sys/util_macro.h>
 
-#include <paw3222.h>
-#include <paw3222_input.h>
-#include <paw3222_power.h>
+#include "paw3222.h"
+#include "paw3222_input.h"
+#include "paw3222_power.h"
 
 LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 
