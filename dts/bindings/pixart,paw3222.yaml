@@ -24,7 +24,7 @@ properties:
     type: array
     required: false
     description: |
-      List of layer numbers to switch between using the snipes-layers feature.
+      List of layer numbers to switch between using the snipe-layers feature.
 
   scroll-layers:
     type: array
@@ -44,6 +44,21 @@ properties:
       CPI resolution for the sensor. This can also be changed in runtime using
       the paw32xx_set_resolution() API.
 
+  snipe-cpi:
+    type: int
+    required: false
+    description: |
+      CPI resolution for snipe (high-precision) mode. If not specified, 
+      defaults to the value of CONFIG_PAW3222_SNIPE_CPI.
+
+  snipe-divisor:
+    type: int
+    required: false
+    description: |
+      Additional precision divisor for snipe mode. Movement values are divided 
+      by this factor in addition to CPI reduction. Higher values = more precision.
+      If not specified, defaults to 2.
+
   force-awake:
     type: boolean
     description: |
@@ -56,11 +71,13 @@ properties:
     required: false
     description: |
       Physical rotation of the sensor in degrees. (0, 90, 180, 270)
-      If not specified, defaults to the value of CONFIG_PAW32XX_SENSOR_ROTATION.
+      Used for scroll direction mapping to ensure y-axis movement always triggers scroll.
+      For cursor movement rotation, use ZMK input-processors like zip_xy_transform.
+      If not specified, defaults to the value of CONFIG_PAW3222_SENSOR_ROTATION.
 
   scroll-tick:
     type: int
     required: false
     description: |
       Threshold for scroll movement (delta value above which scroll is triggered).
-      If not specified, defaults to the value of CONFIG_PAW32XX_SCROLL_TICK.
+      If not specified, defaults to the value of CONFIG_PAW3222_SCROLL_TICK.

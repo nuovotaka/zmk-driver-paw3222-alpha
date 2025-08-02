@@ -97,17 +97,17 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
 
 ## Properties
 
-| Property Name            | Type          | Required | Description                                                                                                               |
-| ------------------------ | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| irq-gpios                | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                             |
-| power-gpios              | phandle-array | No       | GPIO connected to the power control pin.                                                                                  |
-| res-cpi                  | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                   |
-| force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API. |
-| rotation                 | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270)                                                             |
-| scroll-tick              | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered).                                              |
-| snipe-layers             | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                   |
-| scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                  |
-| scroll-horizontal-layers | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                              |
+| Property Name            | Type          | Required | Description                                                                                                                                                          |
+| ------------------------ | ------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| irq-gpios                | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                                                        |
+| power-gpios              | phandle-array | No       | GPIO connected to the power control pin.                                                                                                                             |
+| res-cpi                  | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                                                              |
+| force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API.                                            |
+| rotation                 | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270). Used for scroll direction mapping. For cursor movement, use input-processors like `zip_xy_transform`. |
+| scroll-tick              | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered).                                                                                         |
+| snipe-layers             | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                                                              |
+| scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                                                             |
+| scroll-horizontal-layers | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                                                                         |
 
 ---
 
@@ -139,7 +139,7 @@ CONFIG_INPUT=y
 
 - The driver automatically switches input mode (move, scroll, snipe) based on the active ZMK layer and your devicetree configuration.
 - You can adjust CPI (resolution) at runtime using the API (see below).
-- Use `rotation` to match the sensor’s physical orientation.
+- Use `rotation` to ensure scroll always works with y-axis movement regardless of sensor orientation. For cursor movement rotation, use ZMK input-processors like `zip_xy_transform`.
 - Configure `scroll-tick` to tune scroll sensitivity.
 
 ---
@@ -326,7 +326,7 @@ CONFIG_INPUT=y
 
 - アクティブな ZMK レイヤーとデバイスツリー設定に応じて、入力モード（移動・スクロール・スナイプ）が自動で切り替わります。
 - API を使って実行時に CPI（解像度）を変更できます（下記参照）。
-- `rotation` でセンサーの物理的な向きを調整できます。
+- `rotation` でスクロールが常にy軸方向の動きで動作するよう設定します。カーソル移動の回転には ZMK の input-processors（`zip_xy_transform` など）を使用してください。
 - `scroll-tick` でスクロール感度を調整できます。
 
 ---

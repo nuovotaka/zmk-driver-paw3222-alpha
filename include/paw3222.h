@@ -11,26 +11,13 @@
 #define ZEPHYR_INCLUDE_INPUT_PAW32XX_H_
 
 #include <zephyr/device.h>
+#include <zephyr/drivers/spi.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/kernel.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-#define INPUT_EVENT_SCROLL_LAYER_CHANGED 0x1000
-
-/**
- * @brief Set resolution on a paw32xx device
- *
- * @param dev paw32xx device.
- * @param res_cpi CPI resolution, e.g. 200 to 3200.
- */
-int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
-
-/**
- * @brief Set force awake mode on a paw32xx device
- *
- * @param dev paw32xx device.
- * @param enable whether to enable or disable force awake mode.
- */
-int paw32xx_force_awake(const struct device *dev, bool enable);
+/* These functions are declared in paw3222_power.h */
 
 /**
  * @brief paw32xx configuration struct
@@ -50,11 +37,10 @@ struct paw32xx_config {
     int32_t *scroll_horizontal_layers;
     int16_t res_cpi;
     int16_t snipe_cpi;
+    uint8_t snipe_divisor; // Additional precision divisor for snipe mode (default: 2)
     bool force_awake;
-    bool scroll_enabled;
-    bool snipe_enabled;
-    uint8_t rotation;      // 追加: 回転角度（0, 90, 180, 270）
-    uint8_t scroll_tick;   // 追加: スクロールtick
+    uint16_t rotation;     // Rotation angle (0, 90, 180, 270)
+    uint8_t scroll_tick;   // Scroll tick threshold
 };
 
 /**
@@ -67,14 +53,8 @@ struct paw32xx_data {
     struct k_work motion_work;
     struct gpio_callback motion_cb;
     struct k_timer motion_timer;
-    int16_t last_x;
-    int16_t last_y;
-    int16_t scroll_delta_x;
-    int16_t scroll_delta_y;
     int16_t current_cpi;
-    enum { SCROLL_UNLOCKED, SCROLL_LOCKED_X, SCROLL_LOCKED_Y } scroll_lock;
-    int64_t scroll_lock_expire_time;
-    int64_t scroll_unlock_time;
+    int16_t scroll_accumulator;  // Accumulator for smooth scrolling (reduced from int32_t)
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */
