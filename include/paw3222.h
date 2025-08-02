@@ -37,6 +37,7 @@ struct paw32xx_config {
     int32_t *scroll_horizontal_layers;
     int16_t res_cpi;
     int16_t snipe_cpi;
+    uint8_t snipe_divisor; // Additional precision divisor for snipe mode (default: 2)
     bool force_awake;
     uint8_t rotation;      // Rotation angle (0, 90, 180, 270)
     uint8_t scroll_tick;   // Scroll tick threshold

@@ -133,6 +133,7 @@ static int paw32xx_init(const struct device *dev) {
             (DT_INST_PROP_LEN(n, scroll_horizontal_layers)), (0)), \
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, CONFIG_PAW3222_RES_CPI), \
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
+        .snipe_divisor = DT_INST_PROP_OR(n, snipe_divisor, 2), \
         .force_awake = DT_INST_PROP(n, force_awake), \
         .rotation = DT_INST_PROP_OR(n, rotation, CONFIG_PAW3222_SENSOR_ROTATION),     \
         .scroll_tick = DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW3222_SCROLL_TICK)   \
