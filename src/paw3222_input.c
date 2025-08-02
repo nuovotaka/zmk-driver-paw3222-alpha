@@ -21,6 +21,7 @@ uint8_t zmk_keymap_highest_layer_active(void);
 #include "paw3222.h"
 #include "paw3222_regs.h"
 #include "paw3222_spi.h"
+#include "paw3222_power.h"
 #include "paw3222_input.h"
 
 LOG_MODULE_DECLARE(paw32xx);
@@ -61,7 +62,7 @@ enum paw32xx_input_mode get_input_mode_for_current_layer(const struct device *de
     return PAW32XX_MOVE;
 }
 
-static int16_t calculate_scroll_y(int16_t x, int16_t y, uint8_t rotation) {
+static int16_t calculate_scroll_y(int16_t x, int16_t y, uint16_t rotation) {
     switch (rotation) {
         case 0:
             return y;
