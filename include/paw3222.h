@@ -54,6 +54,7 @@ struct paw32xx_data {
     struct gpio_callback motion_cb;
     struct k_timer motion_timer;
     int16_t current_cpi;
+    int32_t scroll_accumulator;  // Accumulator for smooth scrolling
 };
 
 #endif /* ZEPHYR_INCLUDE_INPUT_PAW32XX_H_ */

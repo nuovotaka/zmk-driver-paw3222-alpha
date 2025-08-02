@@ -139,13 +139,25 @@ void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         }
         case PAW32XX_SCROLL: // Vertical scroll
-            if (abs(scroll_y) > cfg->scroll_tick) {
-                input_report_rel(data->dev, INPUT_REL_WHEEL, (scroll_y > 0 ? 1 : -1), true, K_FOREVER);
+            // Accumulate scroll movement for smoother scrolling
+            data->scroll_accumulator += scroll_y;
+            
+            // Send scroll event when accumulator exceeds threshold
+            if (abs(data->scroll_accumulator) >= cfg->scroll_tick) {
+                int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
+                input_report_rel(data->dev, INPUT_REL_WHEEL, scroll_direction, true, K_FOREVER);
+                data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
-            if (abs(scroll_y) > cfg->scroll_tick) {
-                input_report_rel(data->dev, INPUT_REL_HWHEEL, (scroll_y > 0 ? 1 : -1), true, K_FOREVER);
+            // Accumulate scroll movement for smoother scrolling
+            data->scroll_accumulator += scroll_y;
+            
+            // Send scroll event when accumulator exceeds threshold
+            if (abs(data->scroll_accumulator) >= cfg->scroll_tick) {
+                int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
+                input_report_rel(data->dev, INPUT_REL_HWHEEL, scroll_direction, true, K_FOREVER);
+                data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
             }
             break;
 
