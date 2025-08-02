@@ -11,6 +11,9 @@
 #define ZEPHYR_INCLUDE_INPUT_PAW32XX_H_
 
 #include <zephyr/device.h>
+#include <zephyr/drivers/spi.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/kernel.h>
 #include <stdbool.h>
 #include <stdint.h>
 
