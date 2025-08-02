@@ -7,6 +7,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/input/input.h>
@@ -23,6 +24,11 @@ uint8_t zmk_keymap_highest_layer_active(void);
 #include "paw3222_input.h"
 
 LOG_MODULE_DECLARE(paw32xx);
+
+// Helper function for absolute value of int16_t (memory optimized)
+static inline int16_t abs_int16(int16_t value) {
+    return (value < 0) ? -value : value;
+}
 
 enum paw32xx_input_mode get_input_mode_for_current_layer(const struct device *dev) {
     const struct paw32xx_config *cfg = dev->config;
@@ -139,22 +145,34 @@ void paw32xx_motion_work_handler(struct k_work *work) {
             break;
         }
         case PAW32XX_SCROLL: // Vertical scroll
-            // Accumulate scroll movement for smoother scrolling
-            data->scroll_accumulator += scroll_y;
+            // Accumulate scroll movement for smoother scrolling (with overflow protection)
+            if ((data->scroll_accumulator > 0 && scroll_y > INT16_MAX - data->scroll_accumulator) ||
+                (data->scroll_accumulator < 0 && scroll_y < INT16_MIN - data->scroll_accumulator)) {
+                // Reset accumulator on potential overflow
+                data->scroll_accumulator = scroll_y;
+            } else {
+                data->scroll_accumulator += scroll_y;
+            }
             
             // Send scroll event when accumulator exceeds threshold
-            if (abs(data->scroll_accumulator) >= cfg->scroll_tick) {
+            if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
                 int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
                 input_report_rel(data->dev, INPUT_REL_WHEEL, scroll_direction, true, K_FOREVER);
                 data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
-            // Accumulate scroll movement for smoother scrolling
-            data->scroll_accumulator += scroll_y;
+            // Accumulate scroll movement for smoother scrolling (with overflow protection)
+            if ((data->scroll_accumulator > 0 && scroll_y > INT16_MAX - data->scroll_accumulator) ||
+                (data->scroll_accumulator < 0 && scroll_y < INT16_MIN - data->scroll_accumulator)) {
+                // Reset accumulator on potential overflow
+                data->scroll_accumulator = scroll_y;
+            } else {
+                data->scroll_accumulator += scroll_y;
+            }
             
             // Send scroll event when accumulator exceeds threshold
-            if (abs(data->scroll_accumulator) >= cfg->scroll_tick) {
+            if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
                 int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
                 input_report_rel(data->dev, INPUT_REL_HWHEEL, scroll_direction, true, K_FOREVER);
                 data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
