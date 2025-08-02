@@ -12,6 +12,11 @@ if(CONFIG_PAW3222)
     if(EXISTS ${CMAKE_SOURCE_DIR}/app/include)
         zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/app/include)
     elseif(EXISTS ${CMAKE_SOURCE_DIR}/../zmk/app/include)
-        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/include)
+        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/../zmk/app/include)
+    endif()
+    
+    # Also try the direct path from build log
+    if(EXISTS ${CMAKE_SOURCE_DIR}/zmk/app/include)
+        zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/zmk/app/include)
     endif()
 endif()
