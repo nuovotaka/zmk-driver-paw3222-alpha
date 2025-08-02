@@ -111,8 +111,9 @@ void paw32xx_motion_work_handler(struct k_work *work) {
 
     // CPI Switching
     int16_t target_cpi = cfg->res_cpi;
-    if (input_mode == PAW32XX_SNIPE && cfg->snipe_cpi > 0) {
-        target_cpi = cfg->snipe_cpi;
+    if (input_mode == PAW32XX_SNIPE) {
+        // Use snipe_cpi if configured, otherwise use default from Kconfig
+        target_cpi = (cfg->snipe_cpi > 0) ? cfg->snipe_cpi : CONFIG_PAW3222_SNIPE_CPI;
     }
     if (data->current_cpi != target_cpi) {
         paw32xx_set_resolution(dev, target_cpi);
