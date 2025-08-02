@@ -35,8 +35,8 @@ struct paw32xx_config {
     int16_t res_cpi;
     int16_t snipe_cpi;
     bool force_awake;
-    uint8_t rotation;      // 回転角度（0, 90, 180, 270）
-    uint8_t scroll_tick;   // スクロールtick
+    uint8_t rotation;      // Rotation angle (0, 90, 180, 270)
+    uint8_t scroll_tick;   // Scroll tick threshold
 };
 
 /**
