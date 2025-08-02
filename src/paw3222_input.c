@@ -7,7 +7,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/input/input.h>
