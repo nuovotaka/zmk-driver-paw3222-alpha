@@ -56,6 +56,8 @@ properties:
     required: false
     description: |
       Physical rotation of the sensor in degrees. (0, 90, 180, 270)
+      Used for scroll direction mapping to ensure y-axis movement always triggers scroll.
+      For cursor movement rotation, use ZMK input-processors like zip_xy_transform.
       If not specified, defaults to the value of CONFIG_PAW32XX_SENSOR_ROTATION.
 
   scroll-tick:
