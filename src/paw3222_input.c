@@ -89,14 +89,17 @@ void paw32xx_motion_work_handler(struct k_work *work) {
     uint8_t val;
     int16_t x, y;
     int ret;
+    bool irq_disabled = true;
 
     ret = paw32xx_read_reg(dev, PAW32XX_MOTION, &val);
     if (ret < 0) {
-        return;
+        LOG_ERR("Motion register read failed: %d", ret);
+        goto cleanup;
     }
 
     if ((val & MOTION_STATUS_MOTION) == 0x00) {
         gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
+        irq_disabled = false;
         if (gpio_pin_get_dt(&cfg->irq_gpio) == 0) {
             return;
         }
@@ -104,7 +107,8 @@ void paw32xx_motion_work_handler(struct k_work *work) {
 
     ret = paw32xx_read_xy(dev, &x, &y);
     if (ret < 0) {
-        return;
+        LOG_ERR("XY data read failed: %d", ret);
+        goto cleanup;
     }
 
     // For scroll modes, we need to transform coordinates based on rotation
@@ -137,7 +141,7 @@ void paw32xx_motion_work_handler(struct k_work *work) {
         case PAW32XX_SNIPE: { // High-precision cursor movement
             // Apply additional precision scaling for snipe mode
             // Reduce movement by configurable divisor for ultra-precision
-            uint8_t divisor = (cfg->snipe_divisor > 0) ? cfg->snipe_divisor : 2;
+            uint8_t divisor = MAX(1, cfg->snipe_divisor); // 0除算防止
             int16_t snipe_x = x / divisor;
             int16_t snipe_y = y / divisor;
             
@@ -147,36 +151,30 @@ void paw32xx_motion_work_handler(struct k_work *work) {
         }
         case PAW32XX_SCROLL: // Vertical scroll
             // Accumulate scroll movement for smoother scrolling (with overflow protection)
-            if ((data->scroll_accumulator > 0 && scroll_y > INT16_MAX - data->scroll_accumulator) ||
-                (data->scroll_accumulator < 0 && scroll_y < INT16_MIN - data->scroll_accumulator)) {
-                // Reset accumulator on potential overflow
-                data->scroll_accumulator = scroll_y;
-            } else {
-                data->scroll_accumulator += scroll_y;
-            }
-            
-            // Send scroll event when accumulator exceeds threshold
-            if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
-                int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
-                input_report_rel(data->dev, INPUT_REL_WHEEL, scroll_direction, true, K_FOREVER);
-                data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
+            {
+                int32_t temp = (int32_t)data->scroll_accumulator + scroll_y;
+                data->scroll_accumulator = CLAMP(temp, INT16_MIN, INT16_MAX);
+                
+                // Send scroll event when accumulator exceeds threshold
+                if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
+                    int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
+                    input_report_rel(data->dev, INPUT_REL_WHEEL, scroll_direction, true, K_FOREVER);
+                    data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
+                }
             }
             break;
         case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
             // Accumulate scroll movement for smoother scrolling (with overflow protection)
-            if ((data->scroll_accumulator > 0 && scroll_y > INT16_MAX - data->scroll_accumulator) ||
-                (data->scroll_accumulator < 0 && scroll_y < INT16_MIN - data->scroll_accumulator)) {
-                // Reset accumulator on potential overflow
-                data->scroll_accumulator = scroll_y;
-            } else {
-                data->scroll_accumulator += scroll_y;
-            }
-            
-            // Send scroll event when accumulator exceeds threshold
-            if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
-                int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
-                input_report_rel(data->dev, INPUT_REL_HWHEEL, scroll_direction, true, K_FOREVER);
-                data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
+            {
+                int32_t temp = (int32_t)data->scroll_accumulator + scroll_y;
+                data->scroll_accumulator = CLAMP(temp, INT16_MIN, INT16_MAX);
+                
+                // Send scroll event when accumulator exceeds threshold
+                if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
+                    int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
+                    input_report_rel(data->dev, INPUT_REL_HWHEEL, scroll_direction, true, K_FOREVER);
+                    data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
+                }
             }
             break;
 
@@ -186,6 +184,12 @@ void paw32xx_motion_work_handler(struct k_work *work) {
     }
 
     k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
+    return;
+
+cleanup:
+    if (irq_disabled) {
+        gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
+    }
 }
 
 void paw32xx_motion_handler(const struct device *gpio_dev, struct gpio_callback *cb,
