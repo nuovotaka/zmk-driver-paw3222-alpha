@@ -35,7 +35,7 @@ manifest:
   projects:
     - name: zmk
       remote: zmkfirmware
-      revision: v0.2.1
+      revision: v0.3.0
       import: app/west.yml
     - name: zmk-driver-paw3222-alpha
       remote: nuovotaka
@@ -224,7 +224,7 @@ manifest:
   projects:
     - name: zmk
       remote: zmkfirmware
-      revision: v0.2.1
+      revision: v0.3.0
       import: app/west.yml
     - name: zmk-driver-paw3222-alpha
       remote: nuovotaka
