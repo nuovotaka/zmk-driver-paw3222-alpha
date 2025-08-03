@@ -1,26 +1,54 @@
 
 menuconfig PAW3222
     bool "PAW3222 mouse optical sensor"
-  select SPI
+    select SPI
     help
       Enable PAW3222 mouse optical sensor.
 
+if PAW3222
+
 config PAW3222_RES_CPI
     int "PAW3222 default CPI"
+    range 380 4826
     default 1200
+    help
+      Default CPI (counts per inch) resolution for the sensor.
+      Hardware supports 608-4826 CPI (16*38 to 127*38).
+      Values below 608 will be clamped to minimum hardware limit.
 
 config PAW3222_SNIPE_CPI
-    int "PAW3222 snipe CPI"
+    int "PAW3222 snipe mode CPI"
+    range 380 4826
     default 400
+    help
+      CPI resolution for snipe (high-precision) mode.
+      Hardware supports 608-4826 CPI (16*38 to 127*38).
+      Values below 608 will be clamped to minimum hardware limit.
+      Lower values provide higher precision.
 
-config PAW32XX_SCROLL_TICK
+config PAW3222_SCROLL_TICK
     int "Scroll tick threshold"
+    range 1 255
     default 10
     help
-      Threshold for scroll movement (delta value above which scroll is triggered)
+      Threshold for scroll movement (delta value above which scroll is triggered).
+      Higher values make scrolling less sensitive.
 
-config PAW32XX_SENSOR_ROTATION
-    int "Sensor rotation angle"
+config PAW3222_SNIPE_DIVISOR
+    int "Snipe mode sensitivity divisor"
+    range 1 10
+    default 2
+    help
+      Divisor for snipe mode sensitivity (higher values = lower sensitivity).
+      In snipe mode, cursor movement is divided by this value for ultra-precision.
+      Range: 1 (no reduction) to 10 (very low sensitivity).
+
+config PAW3222_SENSOR_ROTATION
+    int
     default 0
     help
-      Choose the physical rotation of the sensor in degrees.(0, 90, 180, 270)
+      Default sensor rotation angle in degrees.
+      This value is used when rotation is not specified in device tree.
+      Valid values are 0, 90, 180, or 270 degrees.
+
+endif # PAW3222
