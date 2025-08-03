@@ -15,6 +15,15 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
+// Utility macros
+#ifndef CLAMP
+#define CLAMP(val, low, high) (((val) < (low)) ? (low) : (((val) > (high)) ? (high) : (val)))
+#endif
+
+#ifndef MAX
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 // Temporary workaround - declare the function directly
 uint8_t zmk_keymap_highest_layer_active(void);
 
