@@ -14,6 +14,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
+#include <zmk/event_manager.h>
+#include <zmk/events/layer_state_changed.h>
 
 // Utility macros
 #ifndef CLAMP
@@ -24,8 +26,8 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
-// Temporary workaround - declare the function directly
-uint8_t zmk_keymap_highest_layer_active(void);
+// Track current active layer
+static uint8_t current_active_layer = 0;
 
 #include "paw3222.h"
 #include "paw3222_regs.h"
@@ -40,9 +42,22 @@ static inline int16_t abs_int16(int16_t value) {
     return (value < 0) ? -value : value;
 }
 
+// Layer state change event listener
+static int layer_state_changed_listener(const zmk_event_t *eh) {
+    struct zmk_layer_state_changed *ev = as_zmk_layer_state_changed(eh);
+    if (ev != NULL && ev->state) {
+        current_active_layer = ev->layer;
+        LOG_DBG("Layer changed to: %d", current_active_layer);
+    }
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(paw3222_layer_listener, layer_state_changed_listener);
+ZMK_SUBSCRIPTION(paw3222_layer_listener, zmk_layer_state_changed);
+
 enum paw32xx_input_mode get_input_mode_for_current_layer(const struct device *dev) {
     const struct paw32xx_config *cfg = dev->config;
-    uint8_t curr_layer = zmk_keymap_highest_layer_active();
+    uint8_t curr_layer = current_active_layer;
 
     // Horizontal scroll
     if (cfg->scroll_horizontal_layers && cfg->scroll_horizontal_layers_len > 0) {

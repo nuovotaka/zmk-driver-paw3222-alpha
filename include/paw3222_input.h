@@ -19,7 +19,7 @@
  * @brief Get the input mode for the current active layer
  *
  * @param dev PAW3222 device
- * @return Current input mode based on active ZMK layer
+ * @return Current input mode based on active ZMK layer (tracked via event listener)
  */
 enum paw32xx_input_mode get_input_mode_for_current_layer(const struct device *dev);
 
