@@ -34,6 +34,15 @@ config PAW3222_SCROLL_TICK
       Threshold for scroll movement (delta value above which scroll is triggered).
       Higher values make scrolling less sensitive.
 
+config PAW3222_SNIPE_DIVISOR
+    int "Snipe mode sensitivity divisor"
+    range 1 10
+    default 2
+    help
+      Divisor for snipe mode sensitivity (higher values = lower sensitivity).
+      In snipe mode, cursor movement is divided by this value for ultra-precision.
+      Range: 1 (no reduction) to 10 (very low sensitivity).
+
 config PAW3222_SENSOR_ROTATION
     int
     default 0

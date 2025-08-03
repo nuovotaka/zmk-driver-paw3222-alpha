@@ -33,8 +33,8 @@ static int paw32xx_init(const struct device *dev) {
     struct paw32xx_data *data = dev->data;
     int ret;
 
-    data->current_cpi = 0;  // 初期値を0に設定して確実にCPI変更を検出
-    data->scroll_accumulator = 0;  // スクロールアキュムレータを初期化
+    data->current_cpi = 0;  // Initialize to 0 to ensure CPI change detection
+    data->scroll_accumulator = 0;  // Initialize scroll accumulator
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);
@@ -134,7 +134,7 @@ static int paw32xx_init(const struct device *dev) {
             (DT_INST_PROP_LEN(n, scroll_horizontal_layers)), (0)), \
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, CONFIG_PAW3222_RES_CPI), \
         .snipe_cpi = DT_INST_PROP_OR(n, snipe_cpi, CONFIG_PAW3222_SNIPE_CPI), \
-        .snipe_divisor = DT_INST_PROP_OR(n, snipe_divisor, 2), \
+        .snipe_divisor = DT_INST_PROP_OR(n, snipe_divisor, CONFIG_PAW3222_SNIPE_DIVISOR), \
         .force_awake = DT_INST_PROP(n, force_awake), \
         .rotation = DT_INST_PROP_OR(n, rotation, CONFIG_PAW3222_SENSOR_ROTATION),     \
         .scroll_tick = DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW3222_SCROLL_TICK)   \
