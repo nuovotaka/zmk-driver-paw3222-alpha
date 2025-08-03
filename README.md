@@ -86,6 +86,7 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
         /* Optional features */
         // rotation = <0>;  　   // default:0　(0, 90, 180, 270)
         // scroll-tick = <10>;  // default:10
+        // snipe-divisor = <2>; // default:2
         // snipe-layers = <5>;
         // scroll-layers = <6 7 8 9>;
         // scroll-horizontal-layers = <7 9>;
@@ -105,6 +106,7 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
 | force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API.                                            |
 | rotation                 | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270). Used for scroll direction mapping. For cursor movement, use input-processors like `zip_xy_transform`. |
 | scroll-tick              | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered).                                                                                         |
+| snipe-divisor            | int           | No       | Divisor for snipe mode sensitivity (higher values = lower sensitivity).                                                                                              |
 | snipe-layers             | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                                                              |
 | scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                                                             |
 | scroll-horizontal-layers | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                                                                         |
@@ -273,6 +275,7 @@ manifest:
         /* オプション設定例 */
         // rotation = <0>;  　   // デフォルト:0　(0, 90, 180, 270)
         // scroll-tick = <10>;  // デフォルト:10
+        // snipe-divisor = <2>; // デフォルト:2
         // snipe-layers = <5>;
         // scroll-layers = <6 7 8 9>;
         // scroll-horizontal-layers = <7 9>;
@@ -292,6 +295,7 @@ manifest:
 | force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）    |
 | rotation                 | int           | No   | センサーの角度を設定 (0, 90, 180, 270)               |
 | scroll-tick              | int           | No   | スクロール感度の閾値を設定                           |
+| snipe-divisor            | int           | No   | スナイプモードの感度除数（値が大きいほど低感度）     |
 | snipe-layers             | array         | No   | スナイプモードで切り替えるレイヤー番号のリスト       |
 | scroll-layers            | array         | No   | スクロールモードで切り替えるレイヤー番号のリスト     |
 | scroll-horizontal-layers | array         | No   | 水平スクロールモードで切り替えるレイヤー番号のリスト |
@@ -326,7 +330,7 @@ CONFIG_INPUT=y
 
 - アクティブな ZMK レイヤーとデバイスツリー設定に応じて、入力モード（移動・スクロール・スナイプ）が自動で切り替わります。
 - API を使って実行時に CPI（解像度）を変更できます（下記参照）。
-- `rotation` でスクロールが常にy軸方向の動きで動作するよう設定します。カーソル移動の回転には ZMK の input-processors（`zip_xy_transform` など）を使用してください。
+- `rotation` でスクロールが常に y 軸方向の動きで動作するよう設定します。カーソル移動の回転には ZMK の input-processors（`zip_xy_transform` など）を使用してください。
 - `scroll-tick` でスクロール感度を調整できます。
 
 ---
