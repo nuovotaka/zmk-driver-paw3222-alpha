@@ -33,8 +33,8 @@ static int paw32xx_init(const struct device *dev) {
     struct paw32xx_data *data = dev->data;
     int ret;
 
-    data->current_cpi = 0;  // 初期値を0に設定して確実にCPI変更を検出
-    data->scroll_accumulator = 0;  // スクロールアキュムレータを初期化
+    data->current_cpi = 0;  // Initialize to 0 to ensure CPI change detection
+    data->scroll_accumulator = 0;  // Initialize scroll accumulator
 
     if (!spi_is_ready_dt(&cfg->spi)) {
         LOG_ERR("%s is not ready", cfg->spi.bus->name);

@@ -150,7 +150,7 @@ void paw32xx_motion_work_handler(struct k_work *work) {
         case PAW32XX_SNIPE: { // High-precision cursor movement
             // Apply additional precision scaling for snipe mode
             // Reduce movement by configurable divisor for ultra-precision
-            uint8_t divisor = MAX(1, cfg->snipe_divisor); // 0除算防止
+            uint8_t divisor = MAX(1, cfg->snipe_divisor); // Prevent division by zero
             int16_t snipe_x = x / divisor;
             int16_t snipe_y = y / divisor;
             
