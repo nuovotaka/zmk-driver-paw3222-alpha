@@ -14,6 +14,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
+#include <zmk/keymap.h>
 
 // Utility macros
 #ifndef CLAMP
@@ -25,7 +26,7 @@
 #endif
 
 // Temporary workaround - declare the function directly
-uint8_t zmk_keymap_highest_layer_active(void);
+// uint8_t zmk_keymap_highest_layer_active(void);
 
 #include "paw3222.h"
 #include "paw3222_regs.h"
