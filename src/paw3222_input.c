@@ -25,8 +25,6 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
-// Temporary workaround - declare the function directly
-// uint8_t zmk_keymap_highest_layer_active(void);
 
 #include "paw3222.h"
 #include "paw3222_regs.h"
