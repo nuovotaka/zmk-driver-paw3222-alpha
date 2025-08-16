@@ -21,6 +21,28 @@
 /* These functions are declared in paw3222_power.h */
 
 /**
+ * @brief Input mode switching methods
+ */
+enum paw32xx_mode_switch_method {
+  PAW32XX_SWITCH_LAYER,  // Original layer-based switching
+  PAW32XX_SWITCH_TOGGLE, // Toggle key based switching
+  PAW32XX_SWITCH_HOLD,   // Hold key based switching
+  PAW32XX_SWITCH_COMBO,  // Key combination based switching
+};
+
+/**
+ * @brief Current input mode state
+ */
+enum paw32xx_current_mode {
+  PAW32XX_MODE_MOVE,
+  PAW32XX_MODE_SCROLL,
+  PAW32XX_MODE_SCROLL_HORIZONTAL,
+  PAW32XX_MODE_SNIPE,
+  PAW32XX_MODE_SCROLL_SNIPE,
+  PAW32XX_MODE_SCROLL_HORIZONTAL_SNIPE,
+};
+
+/**
  * @brief paw32xx configuration struct
  *
  * This struct should be defined in the driver source, but you may want to
@@ -62,28 +84,6 @@ struct paw32xx_config {
  *
  * This struct is typically only used internally by the driver.
  */
-/**
- * @brief Input mode switching methods
- */
-enum paw32xx_mode_switch_method {
-  PAW32XX_SWITCH_LAYER,  // Original layer-based switching
-  PAW32XX_SWITCH_TOGGLE, // Toggle key based switching
-  PAW32XX_SWITCH_HOLD,   // Hold key based switching
-  PAW32XX_SWITCH_COMBO,  // Key combination based switching
-};
-
-/**
- * @brief Current input mode state
- */
-enum paw32xx_current_mode {
-  PAW32XX_MODE_MOVE,
-  PAW32XX_MODE_SCROLL,
-  PAW32XX_MODE_SCROLL_HORIZONTAL,
-  PAW32XX_MODE_SNIPE,
-  PAW32XX_MODE_SCROLL_SNIPE,
-  PAW32XX_MODE_SCROLL_HORIZONTAL_SNIPE,
-};
-
 struct paw32xx_data {
   const struct device *dev;
   struct k_work motion_work;
