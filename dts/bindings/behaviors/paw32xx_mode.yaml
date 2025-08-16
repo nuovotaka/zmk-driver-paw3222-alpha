@@ -6,14 +6,3 @@ description: PAW3222 input mode switching behavior
 compatible: "paw32xx,mode"
 
 include: one_param.yaml
-
-properties:
-  label:
-    type: string
-    required: true
-    description: Unique label for the behavior instance
-
-  "#binding-cells":
-    type: int
-    const: 1
-    description: Number of cells in a binding
