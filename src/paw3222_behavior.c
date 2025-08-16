@@ -87,10 +87,14 @@ static int paw32xx_move_scroll_toggle_mode(void)
     switch (data->current_mode)
     {
         case PAW32XX_MODE_MOVE:
+        case PAW32XX_MODE_SNIPE:
             data->current_mode = PAW32XX_MODE_SCROLL;
             LOG_INF("Switched to SCROLL mode");
             break;
         case PAW32XX_MODE_SCROLL:
+        case PAW32XX_MODE_SCROLL_HORIZONTAL:
+        case PAW32XX_MODE_SCROLL_SNIPE:
+        case PAW32XX_MODE_SCROLL_HORIZONTAL_SNIPE:
             data->current_mode = PAW32XX_MODE_MOVE;
             LOG_INF("Switched to MOVE mode");
             break;
