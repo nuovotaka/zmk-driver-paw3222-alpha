@@ -9,7 +9,7 @@
 #include <zephyr/logging/log.h>
 
 #ifdef CONFIG_PAW3222_BEHAVIOR
-#include <zmk/behavior.h>
+#include <drivers/behavior.h>
 #endif
 
 #include "paw3222.h"
@@ -25,13 +25,16 @@ LOG_MODULE_REGISTER(paw32xx_behavior, CONFIG_ZMK_LOG_LEVEL);
 static const struct device *paw3222_dev = NULL;
 
 // Function to set the PAW3222 device reference
-void paw32xx_set_device_reference(const struct device *dev) {
+void paw32xx_set_device_reference(const struct device *dev)
+{
   paw3222_dev = dev;
 }
 
 // Function to cycle through input modes
-static int paw32xx_cycle_mode(void) {
-  if (!paw3222_dev) {
+static int paw32xx_cycle_mode(void)
+{
+  if (!paw3222_dev)
+  {
     LOG_ERR("PAW3222 device not initialized");
     return -ENODEV;
   }
@@ -39,7 +42,8 @@ static int paw32xx_cycle_mode(void) {
   struct paw32xx_data *data = paw3222_dev->data;
 
   // Cycle through available modes
-  switch (data->current_mode) {
+  switch (data->current_mode)
+  {
   case PAW32XX_MODE_MOVE:
     data->current_mode = PAW32XX_MODE_SCROLL;
     LOG_INF("Switched to SCROLL mode");
@@ -70,18 +74,23 @@ static int paw32xx_cycle_mode(void) {
 }
 
 // Toggle between move and scroll modes
-static int paw32xx_toggle_mode(void) {
-  if (!paw3222_dev) {
+static int paw32xx_toggle_mode(void)
+{
+  if (!paw3222_dev)
+  {
     LOG_ERR("PAW3222 device not initialized");
     return -ENODEV;
   }
 
   struct paw32xx_data *data = paw3222_dev->data;
 
-  if (data->current_mode == PAW32XX_MODE_MOVE) {
+  if (data->current_mode == PAW32XX_MODE_MOVE)
+  {
     data->current_mode = PAW32XX_MODE_SCROLL;
     LOG_INF("Switched to SCROLL mode");
-  } else {
+  }
+  else
+  {
     data->current_mode = PAW32XX_MODE_MOVE;
     LOG_INF("Switched to MOVE mode");
   }
@@ -93,10 +102,12 @@ static int paw32xx_toggle_mode(void) {
 
 static int on_paw32xx_mode_binding_pressed(
     struct zmk_behavior_binding *binding,
-    struct zmk_behavior_binding_event binding_event) {
+    struct zmk_behavior_binding_event binding_event)
+{
   uint32_t param = binding->param1;
 
-  switch (param) {
+  switch (param)
+  {
   case 0: // Toggle mode
     return paw32xx_toggle_mode();
   case 1: // Cycle mode
@@ -109,26 +120,35 @@ static int on_paw32xx_mode_binding_pressed(
 
 static int on_paw32xx_mode_binding_released(
     struct zmk_behavior_binding *binding,
-    struct zmk_behavior_binding_event binding_event) {
+    struct zmk_behavior_binding_event binding_event)
+{
   // No action on release for toggle/cycle modes
   return ZMK_BEHAVIOR_OPAQUE;
 }
 
 static const struct behavior_driver_api behavior_paw32xx_mode_driver_api = {
+    .locality = BEHAVIOR_LOCALITY_CENTRAL, // require
     .binding_pressed = on_paw32xx_mode_binding_pressed,
     .binding_released = on_paw32xx_mode_binding_released,
+    .sensor_binding_accept_data = NULL,
+    .sensor_binding_process = NULL,
+#if IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
+    .get_parameter_metadata = NULL,
+    .parameter_metadata = NULL,
+#endif
 };
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
-static int behavior_paw32xx_mode_init(const struct device *dev) {
+static int behavior_paw32xx_mode_init(const struct device *dev)
+{
   LOG_DBG("PAW3222 behavior initialized");
   return 0;
 }
 
-#define PAW32XX_MODE_INST(n)                                                   \
-  BEHAVIOR_DT_INST_DEFINE(n, behavior_paw32xx_mode_init, NULL, NULL, NULL,     \
-                          POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,    \
+#define PAW32XX_MODE_INST(n)                                                \
+  BEHAVIOR_DT_INST_DEFINE(n, behavior_paw32xx_mode_init, NULL, NULL, NULL,  \
+                          POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, \
                           &behavior_paw32xx_mode_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(PAW32XX_MODE_INST)
