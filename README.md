@@ -114,15 +114,15 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
 | res-cpi                        | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                                                              |
 | force-awake                    | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API.                                            |
 | rotation                       | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270). Used for scroll direction mapping. For cursor movement, use input-processors like `zip_xy_transform`. |
-| scroll-tick                    | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered).                                                                                         |
-| snipe-divisor                  | int           | No       | Divisor for snipe mode sensitivity (higher values = lower sensitivity).                                                                                              |
+| scroll-tick                    | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered). Used by normal scroll and horizontal scroll modes only.                                 |
+| snipe-divisor                  | int           | No       | Divisor for cursor snipe mode sensitivity (higher values = lower sensitivity). Used by cursor snipe mode only, not scroll modes.                                     |
 | snipe-layers                   | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                                                              |
 | scroll-layers                  | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                                                             |
 | scroll-horizontal-layers       | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                                                                         |
 | scroll-snipe-layers            | array         | No       | List of layer numbers to switch between using the high-precision vertical scroll feature.                                                                            |
 | scroll-horizontal-snipe-layers | array         | No       | List of layer numbers to switch between using the high-precision horizontal scroll feature.                                                                          |
-| scroll-snipe-divisor           | int           | No       | Divisor for scroll snipe mode sensitivity (higher values = lower sensitivity).                                                                                       |
-| scroll-snipe-tick              | int           | No       | Threshold for scroll movement in snipe mode (higher values = less sensitive scrolling).                                                                              |
+| scroll-snipe-divisor           | int           | No       | Divisor for scroll snipe mode sensitivity (higher values = lower sensitivity). Used by scroll snipe modes only.                                                      |
+| scroll-snipe-tick              | int           | No       | Threshold for scroll movement in snipe mode (higher values = less sensitive scrolling). Used by scroll snipe modes only.                                             |
 
 ---
 
