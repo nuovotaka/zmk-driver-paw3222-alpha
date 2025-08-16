@@ -109,8 +109,10 @@ static int on_paw32xx_mode_binding_pressed(
   switch (param)
   {
   case 0: // Toggle mode
+    LOG_DBG("Toggle mode");
     return paw32xx_toggle_mode();
   case 1: // Cycle mode
+    LOG_DBG("Cycle mode");
     return paw32xx_cycle_mode();
   default:
     LOG_ERR("Unknown PAW3222 mode parameter: %d", param);
