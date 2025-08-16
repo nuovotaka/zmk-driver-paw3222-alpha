@@ -73,30 +73,80 @@ static int paw32xx_cycle_mode(void)
   return 0;
 }
 
-// Toggle between move and scroll modes
-static int paw32xx_toggle_mode(void)
+// Move Scroll Toggle between move and scroll modes
+static int paw32xx_move_scroll_toggle_mode(void)
 {
-  if (!paw3222_dev)
-  {
-    LOG_ERR("PAW3222 device not initialized");
-    return -ENODEV;
-  }
+    if (!paw3222_dev)
+    {
+        LOG_ERR("PAW3222 device not initialized");
+        return -ENODEV;
+    }
 
-  struct paw32xx_data *data = paw3222_dev->data;
+    struct paw32xx_data *data = paw3222_dev->data;
 
-  if (data->current_mode == PAW32XX_MODE_MOVE)
-  {
-    data->current_mode = PAW32XX_MODE_SCROLL;
-    LOG_INF("Switched to SCROLL mode");
-  }
-  else
-  {
-    data->current_mode = PAW32XX_MODE_MOVE;
-    LOG_INF("Switched to MOVE mode");
-  }
+    switch (data->current_mode)
+    {
+        case PAW32XX_MODE_MOVE:
+            data->current_mode = PAW32XX_MODE_SCROLL;
+            LOG_INF("Switched to SCROLL mode");
+            break;
+        case PAW32XX_MODE_SCROLL:
+            data->current_mode = PAW32XX_MODE_MOVE;
+            LOG_INF("Switched to MOVE mode");
+            break;
+        default:
+            LOG_ERR("Unsupported mode");
+            return -ENODEV;
+    }
 
-  return 0;
+    return 0;
 }
+
+// Normal Snipe Toggle between move and scroll modes
+static int paw32xx_normal_snipe_toggle_mode(void)
+{
+    if (!paw3222_dev)
+    {
+        LOG_ERR("PAW3222 device not initialized");
+        return -ENODEV;
+    }
+
+    struct paw32xx_data *data = paw3222_dev->data;
+
+    switch (data->current_mode)
+    {
+        case PAW32XX_MODE_MOVE:
+            data->current_mode = PAW32XX_MODE_SNIPE;
+            LOG_INF("Switched to SNIPE mode");
+            break;
+        case PAW32XX_MODE_SNIPE:
+            data->current_mode = PAW32XX_MODE_MOVE;
+            LOG_INF("Switched to MOVE mode");
+            break;
+        case PAW32XX_MODE_SCROLL:
+            data->current_mode = PAW32XX_MODE_SCROLL_SNIPE;
+            LOG_INF("Switched to SCROLL_SNIPE mode");
+            break;
+        case PAW32XX_MODE_SCROLL_SNIPE:
+            data->current_mode = PAW32XX_MODE_SCROLL;
+            LOG_INF("Switched to SCROLL mode");
+            break;
+        case PAW32XX_MODE_SCROLL_HORIZONTAL:
+            data->current_mode = PAW32XX_MODE_SCROLL_HORIZONTAL_SNIPE;
+            LOG_INF("Switched to SCROLL_HORIZONTAL_SNIPE mode");
+            break;
+        case PAW32XX_MODE_SCROLL_HORIZONTAL_SNIPE:
+            data->current_mode = PAW32XX_MODE_SCROLL_HORIZONTAL;
+            LOG_INF("Switched to SCROLL_HORIZONTAL mode");
+            break;
+        default:
+            LOG_ERR("Unsupported mode");
+            return -ENODEV;
+    }
+
+    return 0;
+}
+
 
 // Behavior implementation for PAW3222 mode switching
 
@@ -108,10 +158,13 @@ static int on_paw32xx_mode_binding_pressed(
 
   switch (param)
   {
-  case 0: // Toggle mode
-    LOG_DBG("Toggle mode");
-    return paw32xx_toggle_mode();
-  case 1: // Cycle mode
+  case 0: // Move <-> Scroll Toggle mode
+    LOG_DBG("Move <-> Scroll Toggle mode");
+    return paw32xx_move_scroll_toggle_mode();
+  case 1: // Normal <-> Snipe Toggle mode
+    LOG_DBG("Normal <-> Snipe Toggle mode");
+    return paw32xx_normal_snipe_toggle_mode();
+  case 2: // Cycle mode
     LOG_DBG("Cycle mode");
     return paw32xx_cycle_mode();
   default:
