@@ -24,12 +24,14 @@
 enum paw32xx_input_mode
 get_input_mode_for_current_layer(const struct device *dev);
 
+#ifdef CONFIG_PAW3222_BEHAVIOR
 /**
  * @brief Set the PAW3222 device reference for behavior
  *
  * @param dev PAW3222 device
  */
 void paw32xx_set_device_reference(const struct device *dev);
+#endif
 
 /**
  * @brief Motion timer handler

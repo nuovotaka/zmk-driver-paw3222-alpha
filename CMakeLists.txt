@@ -5,7 +5,7 @@ if(CONFIG_PAW3222)
         src/paw3222_spi.c
         src/paw3222_input.c
         src/paw3222_power.c
-        src/paw3222_behavior.c
+        # src/paw3222_behavior.c  # Temporarily disabled
     )
     zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
     

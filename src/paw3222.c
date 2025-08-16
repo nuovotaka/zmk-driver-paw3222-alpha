@@ -45,8 +45,10 @@ static int paw32xx_init(const struct device *dev) {
 
   data->dev = dev;
 
-  // Set device reference for behavior
+// Set device reference for behavior (if enabled)
+#ifdef CONFIG_PAW3222_BEHAVIOR
   paw32xx_set_device_reference(dev);
+#endif
 
   k_work_init(&data->motion_work, paw32xx_motion_work_handler);
   k_timer_init(&data->motion_timer, paw32xx_motion_timer_handler, NULL);

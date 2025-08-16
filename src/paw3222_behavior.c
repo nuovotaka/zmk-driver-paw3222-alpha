@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifdef CONFIG_PAW3222_BEHAVIOR
+
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/kernel.h>
@@ -15,6 +17,14 @@
 LOG_MODULE_REGISTER(paw32xx_behavior, CONFIG_ZMK_LOG_LEVEL);
 
 #define DT_DRV_COMPAT paw32xx_mode
+
+// Forward declarations
+static int on_paw32xx_mode_binding_pressed(
+    struct zmk_behavior_binding *binding,
+    struct zmk_behavior_binding_event binding_event);
+static int on_paw32xx_mode_binding_released(
+    struct zmk_behavior_binding *binding,
+    struct zmk_behavior_binding_event binding_event);
 
 // Global pointer to the PAW3222 device (set during init)
 static const struct device *paw3222_dev = NULL;
@@ -32,7 +42,6 @@ static int paw32xx_cycle_mode(void) {
   }
 
   struct paw32xx_data *data = paw3222_dev->data;
-  const struct paw32xx_config *cfg = paw3222_dev->config;
 
   // Cycle through available modes
   switch (data->current_mode) {
@@ -63,8 +72,10 @@ static int paw32xx_cycle_mode(void) {
   }
 
   return 0;
-} // Toggl
-e between move and scroll modes static int paw32xx_toggle_mode(void) {
+}
+
+// Toggle between move and scroll modes
+static int paw32xx_toggle_mode(void) {
   if (!paw3222_dev) {
     LOG_ERR("PAW3222 device not initialized");
     return -ENODEV;

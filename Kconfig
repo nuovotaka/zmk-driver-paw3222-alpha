@@ -69,4 +69,11 @@ config PAW3222_SENSOR_ROTATION
       This value is used when rotation is not specified in device tree.
       Valid values are 0, 90, 180, or 270 degrees.
 
+config PAW3222_BEHAVIOR
+    bool "Enable PAW3222 behavior support"
+    default n
+    help
+      Enable ZMK behavior support for PAW3222 mode switching.
+      This allows using &paw_mode behavior in keymaps.
+
 endif # PAW3222
