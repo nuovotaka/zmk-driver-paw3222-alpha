@@ -8,7 +8,8 @@ This driver enables use of the PIXART PAW3222 optical sensor with the ZMK framew
 
 - SPI communication with the PAW3222 sensor
 - Supports cursor movement, vertical/horizontal scrolling, and snipe (precision) mode
-- Layer-based input mode switching (move, scroll, snipe)
+- Layer-based input mode switching (move, scroll, snipe, scroll-snipe)
+- High-precision scroll modes with configurable sensitivity
 - Runtime CPI (resolution) adjustment
 - Power management and low-power modes
 - Optional power GPIO support
@@ -90,6 +91,14 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
         // snipe-layers = <5>;
         // scroll-layers = <6 7 8 9>;
         // scroll-horizontal-layers = <7 9>;
+        // scroll-snipe-layers = <10>;
+        // scroll-horizontal-snipe-layers = <11>;
+        // scroll-snipe-divisor = <3>; // default:3 (configurable via Kconfig)
+        // scroll-snipe-tick = <20>;   // default:20 (configurable via Kconfig)
+
+        // Alternative: Use behavior-based switching instead of layers
+        // switch-method = "toggle";   // "layer", "toggle", "hold", "combo"
+        // use-cycle-modes;            // Cycle through all modes instead of just toggle
     };
 };
 ```
@@ -98,18 +107,22 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
 
 ## Properties
 
-| Property Name            | Type          | Required | Description                                                                                                                                                          |
-| ------------------------ | ------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| irq-gpios                | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                                                        |
-| power-gpios              | phandle-array | No       | GPIO connected to the power control pin.                                                                                                                             |
-| res-cpi                  | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                                                              |
-| force-awake              | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API.                                            |
-| rotation                 | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270). Used for scroll direction mapping. For cursor movement, use input-processors like `zip_xy_transform`. |
-| scroll-tick              | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered).                                                                                         |
-| snipe-divisor            | int           | No       | Divisor for snipe mode sensitivity (higher values = lower sensitivity).                                                                                              |
-| snipe-layers             | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                                                              |
-| scroll-layers            | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                                                             |
-| scroll-horizontal-layers | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                                                                         |
+| Property Name                  | Type          | Required | Description                                                                                                                                                          |
+| ------------------------------ | ------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| irq-gpios                      | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                                                        |
+| power-gpios                    | phandle-array | No       | GPIO connected to the power control pin.                                                                                                                             |
+| res-cpi                        | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                                                              |
+| force-awake                    | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API.                                            |
+| rotation                       | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270). Used for scroll direction mapping. For cursor movement, use input-processors like `zip_xy_transform`. |
+| scroll-tick                    | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered).                                                                                         |
+| snipe-divisor                  | int           | No       | Divisor for snipe mode sensitivity (higher values = lower sensitivity).                                                                                              |
+| snipe-layers                   | array         | No       | List of layer numbers to switch between using the snipe-layers feature.                                                                                              |
+| scroll-layers                  | array         | No       | List of layer numbers to switch between using the scroll-layers feature.                                                                                             |
+| scroll-horizontal-layers       | array         | No       | List of layer numbers to switch between using the horizontal scroll feature.                                                                                         |
+| scroll-snipe-layers            | array         | No       | List of layer numbers to switch between using the high-precision vertical scroll feature.                                                                            |
+| scroll-horizontal-snipe-layers | array         | No       | List of layer numbers to switch between using the high-precision horizontal scroll feature.                                                                          |
+| scroll-snipe-divisor           | int           | No       | Divisor for scroll snipe mode sensitivity (higher values = lower sensitivity).                                                                                       |
+| scroll-snipe-tick              | int           | No       | Threshold for scroll movement in snipe mode (higher values = less sensitive scrolling).                                                                              |
 
 ---
 
@@ -287,18 +300,22 @@ manifest:
 
 ## プロパティ
 
-| プロパティ名             | 型            | 必須 | 説明                                                 |
-| ------------------------ | ------------- | ---- | ---------------------------------------------------- |
-| irq-gpios                | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）    |
-| power-gpios              | phandle-array | No   | 電源制御ピンに接続された GPIO                        |
-| res-cpi                  | int           | No   | センサーの CPI 解像度（API で実行時変更可）          |
-| force-awake              | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）    |
-| rotation                 | int           | No   | センサーの角度を設定 (0, 90, 180, 270)               |
-| scroll-tick              | int           | No   | スクロール感度の閾値を設定                           |
-| snipe-divisor            | int           | No   | スナイプモードの感度除数（値が大きいほど低感度）     |
-| snipe-layers             | array         | No   | スナイプモードで切り替えるレイヤー番号のリスト       |
-| scroll-layers            | array         | No   | スクロールモードで切り替えるレイヤー番号のリスト     |
-| scroll-horizontal-layers | array         | No   | 水平スクロールモードで切り替えるレイヤー番号のリスト |
+| プロパティ名                   | 型            | 必須 | 説明                                                       |
+| ------------------------------ | ------------- | ---- | ---------------------------------------------------------- |
+| irq-gpios                      | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）          |
+| power-gpios                    | phandle-array | No   | 電源制御ピンに接続された GPIO                              |
+| res-cpi                        | int           | No   | センサーの CPI 解像度（API で実行時変更可）                |
+| force-awake                    | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）          |
+| rotation                       | int           | No   | センサーの角度を設定 (0, 90, 180, 270)                     |
+| scroll-tick                    | int           | No   | スクロール感度の閾値を設定                                 |
+| snipe-divisor                  | int           | No   | スナイプモードの感度除数（値が大きいほど低感度）           |
+| snipe-layers                   | array         | No   | スナイプモードで切り替えるレイヤー番号のリスト             |
+| scroll-layers                  | array         | No   | スクロールモードで切り替えるレイヤー番号のリスト           |
+| scroll-horizontal-layers       | array         | No   | 水平スクロールモードで切り替えるレイヤー番号のリスト       |
+| scroll-snipe-layers            | array         | No   | 高精度垂直スクロールモードで切り替えるレイヤー番号のリスト |
+| scroll-horizontal-snipe-layers | array         | No   | 高精度水平スクロールモードで切り替えるレイヤー番号のリスト |
+| scroll-snipe-divisor           | int           | No   | スクロールスナイプモードの感度除数（値が大きいほど低感度） |
+| scroll-snipe-tick              | int           | No   | スナイプモードでのスクロール閾値（値が大きいほど鈍感）     |
 
 ---
 
@@ -373,3 +390,68 @@ Copyright 2024 Google LLC
 Modifications Copyright 2025 sekigon-gonnoc
 Modifications Copyright 2025 nuovotaka
 ```
+
+---
+
+## Behavior-Based Mode Switching
+
+Instead of using empty layers, you can use ZMK behaviors to switch input modes:
+
+### Keymap Configuration
+
+```dts
+/ {
+    behaviors {
+        paw_mode: paw_mode {
+            compatible = "paw32xx,mode";
+            label = "PAW_MODE";
+            #binding-cells = <1>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                // Toggle between move and scroll modes
+                &paw_mode 0
+
+                // Cycle through all available modes
+                &paw_mode 1
+
+                // Other keys...
+            >;
+        };
+    };
+};
+```
+
+### Device Tree Configuration
+
+```dts
+trackball: trackball@0 {
+    compatible = "pixart,paw3222";
+    // ... other properties ...
+
+    // Use behavior-based switching
+    switch-method = "toggle";
+    use-cycle-modes;  // Optional: cycle through all modes
+
+    // Layer-based properties are ignored when using behavior switching
+};
+```
+
+### Benefits
+
+- **No empty layers required**: Switch modes using dedicated keys
+- **More intuitive**: Direct key press to change modes
+- **Flexible**: Toggle or cycle through modes as needed
+- **Visual feedback**: Can add LED indicators or OLED display updates
+- **Backward compatible**: Layer-based switching still works
+
+### Mode Switching Options
+
+1. **Toggle Mode** (`&paw_mode 0`): Switch between move and scroll
+2. **Cycle Mode** (`&paw_mode 1`): Cycle through all available modes:
+   - Move → Scroll → Horizontal Scroll → Snipe → Scroll Snipe → Horizontal Scroll Snipe → Move

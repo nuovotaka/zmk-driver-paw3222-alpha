@@ -1,0 +1,30 @@
+# Copyright 2025 nuovotaka
+# SPDX-License-Identifier: Apache-2.0
+
+description: PAW3222 input mode switching behavior
+
+compatible: "paw32xx,mode"
+
+include: one_param.yaml
+
+properties:
+  label:
+    type: string
+    required: true
+    description: Unique label for the behavior instance
+
+  #param-name:
+  #  type: string
+  #  default: "mode"
+  #  description: Name for the parameter
+
+param-names:
+  - mode
+
+param-values:
+  mode:
+    type: int
+    description: |
+      Mode switching type:
+      0 = Toggle between move and scroll
+      1 = Cycle through all modes
