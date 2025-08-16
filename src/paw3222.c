@@ -183,7 +183,7 @@ static int paw32xx_init(const struct device *dev) {
       .scroll_tick =                                                           \
           DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW3222_SCROLL_TICK),         \
       .switch_method = PAW32XX_SWITCH_LAYER,                                   \
-      .use_cycle_modes = false};                                               \
+      .use_cycle_modes = DT_INST_PROP_OR(n, use_cycle_modes, false)};          \
   static struct paw32xx_data paw32xx_data_##n;                                 \
   PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action);                              \
   DEVICE_DT_INST_DEFINE(n, paw32xx_init, PM_DEVICE_DT_INST_GET(n),             \

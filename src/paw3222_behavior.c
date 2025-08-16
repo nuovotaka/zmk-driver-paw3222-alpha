@@ -3,28 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef CONFIG_PAW3222_BEHAVIOR
-
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+
+#ifdef CONFIG_PAW3222_BEHAVIOR
 #include <zmk/behavior.h>
+#endif
 
 #include "paw3222.h"
 #include "paw3222_input.h"
 
 LOG_MODULE_REGISTER(paw32xx_behavior, CONFIG_ZMK_LOG_LEVEL);
 
-#define DT_DRV_COMPAT paw32xx_mode
+#ifdef CONFIG_PAW3222_BEHAVIOR
 
-// Forward declarations
-static int on_paw32xx_mode_binding_pressed(
-    struct zmk_behavior_binding *binding,
-    struct zmk_behavior_binding_event binding_event);
-static int on_paw32xx_mode_binding_released(
-    struct zmk_behavior_binding *binding,
-    struct zmk_behavior_binding_event binding_event);
+#define DT_DRV_COMPAT paw32xx_mode
 
 // Global pointer to the PAW3222 device (set during init)
 static const struct device *paw3222_dev = NULL;
@@ -126,7 +121,10 @@ static const struct behavior_driver_api behavior_paw32xx_mode_driver_api = {
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
-static int behavior_paw32xx_mode_init(const struct device *dev) { return 0; }
+static int behavior_paw32xx_mode_init(const struct device *dev) {
+  LOG_DBG("PAW3222 behavior initialized");
+  return 0;
+}
 
 #define PAW32XX_MODE_INST(n)                                                   \
   BEHAVIOR_DT_INST_DEFINE(n, behavior_paw32xx_mode_init, NULL, NULL, NULL,     \
@@ -135,4 +133,6 @@ static int behavior_paw32xx_mode_init(const struct device *dev) { return 0; }
 
 DT_INST_FOREACH_STATUS_OKAY(PAW32XX_MODE_INST)
 
-#endif
+#endif /* DT_HAS_COMPAT_STATUS_OKAY */
+
+#endif /* CONFIG_PAW3222_BEHAVIOR */

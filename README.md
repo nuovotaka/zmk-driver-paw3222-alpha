@@ -139,6 +139,9 @@ config ZMK_POINTING
 config PAW3222
     default y
 
+config PAW3222_BEHAVIOR
+    default y
+
 endif
 ```
 
@@ -455,3 +458,51 @@ trackball: trackball@0 {
 1. **Toggle Mode** (`&paw_mode 0`): Switch between move and scroll
 2. **Cycle Mode** (`&paw_mode 1`): Cycle through all available modes:
    - Move → Scroll → Horizontal Scroll → Snipe → Scroll Snipe → Horizontal Scroll Snipe → Move
+
+### Complete Example
+
+```dts
+// In your .overlay file
+&spi0 {
+    trackball: trackball@0 {
+        compatible = "pixart,paw3222";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        // Use behavior-based switching
+        switch-method = "toggle";
+        use-cycle-modes;
+
+        // Sensitivity settings
+        res-cpi = <1200>;
+        scroll-tick = <10>;
+        snipe-divisor = <2>;
+        scroll-snipe-divisor = <3>;
+        scroll-snipe-tick = <20>;
+    };
+};
+
+// In your .keymap file
+/ {
+    behaviors {
+        paw_mode: paw_mode {
+            compatible = "paw32xx,mode";
+            #binding-cells = <1>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                &kp Q &kp W &kp E &kp R &kp T
+                &kp A &kp S &kp D &kp F &kp G
+                &kp Z &kp X &paw_mode 0 &paw_mode 1 &kp B
+                //           ↑Toggle   ↑Cycle
+            >;
+        };
+    };
+};
+```
