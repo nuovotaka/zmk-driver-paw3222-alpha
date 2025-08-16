@@ -13,18 +13,7 @@ properties:
     required: true
     description: Unique label for the behavior instance
 
-  #param-name:
-  #  type: string
-  #  default: "mode"
-  #  description: Name for the parameter
-
-param-names:
-  - mode
-
-param-values:
-  mode:
+  "#binding-cells":
     type: int
-    description: |
-      Mode switching type:
-      0 = Toggle between move and scroll
-      1 = Cycle through all modes
+    const: 1
+    description: Number of cells in a binding

@@ -34,7 +34,9 @@ static int paw32xx_init(const struct device *dev) {
   int ret;
 
   data->current_cpi = 0; // Initialize to 0 to ensure CPI change detection
-  data->scroll_accumulator = 0; // Initialize scroll accumulator
+  data->scroll_accumulator = 0;           // Initialize scroll accumulator
+  data->current_mode = PAW32XX_MODE_MOVE; // Initialize to move mode
+  data->mode_toggle_state = false;
 
   if (!spi_is_ready_dt(&cfg->spi)) {
     LOG_ERR("%s is not ready", cfg->spi.bus->name);
@@ -42,6 +44,9 @@ static int paw32xx_init(const struct device *dev) {
   }
 
   data->dev = dev;
+
+  // Set device reference for behavior
+  paw32xx_set_device_reference(dev);
 
   k_work_init(&data->motion_work, paw32xx_motion_work_handler);
   k_timer_init(&data->motion_timer, paw32xx_motion_timer_handler, NULL);
@@ -174,7 +179,9 @@ static int paw32xx_init(const struct device *dev) {
       .rotation =                                                              \
           DT_INST_PROP_OR(n, rotation, CONFIG_PAW3222_SENSOR_ROTATION),        \
       .scroll_tick =                                                           \
-          DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW3222_SCROLL_TICK)};        \
+          DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW3222_SCROLL_TICK),         \
+      .switch_method = PAW32XX_SWITCH_LAYER,                                   \
+      .use_cycle_modes = false};                                               \
   static struct paw32xx_data paw32xx_data_##n;                                 \
   PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action);                              \
   DEVICE_DT_INST_DEFINE(n, paw32xx_init, PM_DEVICE_DT_INST_GET(n),             \
