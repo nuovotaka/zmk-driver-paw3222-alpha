@@ -13,6 +13,8 @@ This driver enables use of the PIXART PAW3222 optical sensor with the ZMK framew
 - Runtime CPI (resolution) adjustment
 - Power management and low-power modes
 - Optional power GPIO support
+- **Mode Switching:** Toggle between MOVE, SCROLL, SNIPE, and HORIZONTAL SCROLL modes.
+- **Behavior API Integration:** Implements Zephyr's behavior driver API for seamless key binding.
 
 ---
 
@@ -182,6 +184,125 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
 
 ---
 
+## Behavior-Based Mode Switching
+
+Instead of using empty layers, you can use ZMK behaviors to switch input modes:
+
+### Keymap Configuration
+
+```dts
+/ {
+    behaviors {
+        paw_mode: paw_mode {
+            compatible = "paw32xx,mode";
+            label = "PAW_MODE";
+            #binding-cells = <1>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                // Toggle between move and scroll modes
+                &paw_mode 0
+
+                // Toggle between normal and snipe modes
+                &paw_mode 1
+
+                // Toggle between Vertical and Horizontal modes
+                &paw_mode 2
+            >;
+        };
+    };
+};
+```
+
+### Device Tree Configuration
+
+```dts
+trackball: trackball@0 {
+    compatible = "pixart,paw3222";
+    // ... other properties ...
+
+    // Use behavior-based switching
+    switch-method = "toggle";
+
+    // Layer-based properties are ignored when using behavior switching
+};
+```
+
+### Complete Example
+
+```dts
+// In your .overlay file
+&spi0 {
+    trackball: trackball@0 {
+        compatible = "pixart,paw3222";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        // Use behavior-based switching
+        switch-method = "toggle";
+
+        // Sensitivity settings
+        res-cpi = <1200>;
+        scroll-tick = <10>;
+        snipe-divisor = <2>;
+        scroll-snipe-divisor = <3>;
+        scroll-snipe-tick = <20>;
+    };
+};
+
+// In your .keymap file
+/ {
+    behaviors {
+        paw_mode: paw_mode {
+            compatible = "paw32xx,mode";
+            #binding-cells = <1>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                &kp Q &kp W &kp E &kp R &kp T
+                &kp A &kp S &kp D &kp F &kp G
+                &kp Z &kp X &paw_mode 0 &paw_mode 1 &paw_mode 2
+                //           ↑Move/Scroll   ↑Snipe        ↑Scroll_Horizontal
+            >;
+        };
+    };
+};
+```
+
+## Mode Switching Functions
+
+1. **Move/Scroll Toggle:** Switches between MOVE and SCROLL modes.
+2. **Normal/Snipe Toggle:** Switches between MOVE, SNIPE, SCROLL, and SCROLL_SNIPE modes.
+3. **Vertical/Horizontal Toggle:** Switches between vertical and horizontal scroll modes.
+
+## Usage
+
+- The driver is activated via key bindings, with each binding parameter corresponding to a mode-switch function.
+- Logging provides feedback for mode changes and errors.
+- The device reference is set during initialization.
+
+## Initialization
+
+The driver is initialized automatically if the device tree is configured correctly and the `CONFIG_PAW3222_BEHAVIOR` option is enabled.
+
+```.conf
+CONFIG_PAW3222_BEHAVIOR=y
+
+```
+
+---
+
 ## Troubleshooting
 
 - If the sensor does not work, check SPI and GPIO wiring.
@@ -217,6 +338,8 @@ Modifications Copyright 2025 nuovotaka
 - 実行時 CPI（解像度）変更対応
 - 電源管理・低消費電力モード
 - オプションで電源 GPIO 制御
+- **モード切替:** MOVE、SCROLL、SNIPE、HORIZONTAL SCROLL モードを切り替え可能
+- **ビヘイビア API 統合:** Zephyr のビヘイビアドライバ API を実装し、キー割り当てに対応
 
 ---
 
@@ -335,6 +458,9 @@ config ZMK_POINTING
 config PAW3222
     default y
 
+config PAW3222_BEHAVIOR
+    default y
+
 endif
 ```
 
@@ -375,32 +501,11 @@ int paw32xx_force_awake(const struct device *dev, bool enable);
 
 ---
 
-## トラブルシューティング
-
-- センサーが動作しない場合は、SPI や GPIO の配線を確認してください。
-- `irq-gpios` および（使用する場合）`power-gpios` の指定が正しいか確認してください。
-- Zephyr ログで起動時のエラーを確認してください。
-- ZMK のバージョンが要件を満たしているか確認してください。
-
----
-
-## ライセンス
-
-```
-SPDX-License-Identifier: Apache-2.0
-
-Copyright 2024 Google LLC
-Modifications Copyright 2025 sekigon-gonnoc
-Modifications Copyright 2025 nuovotaka
-```
-
----
-
-## Behavior-Based Mode Switching
+## Behavior-Based モード切り替え
 
 Instead of using empty layers, you can use ZMK behaviors to switch input modes:
 
-### Keymap Configuration
+### Keymap の設定
 
 ```dts
 / {
@@ -420,17 +525,18 @@ Instead of using empty layers, you can use ZMK behaviors to switch input modes:
                 // Toggle between move and scroll modes
                 &paw_mode 0
 
-                // Cycle through all available modes
+                // Toggle between normal and snipe modes
                 &paw_mode 1
 
-                // Other keys...
+                // Toggle between Vertical and Horizontal modes
+                &paw_mode 2
             >;
         };
     };
 };
 ```
 
-### Device Tree Configuration
+### デバイスツリーの設定
 
 ```dts
 trackball: trackball@0 {
@@ -439,25 +545,10 @@ trackball: trackball@0 {
 
     // Use behavior-based switching
     switch-method = "toggle";
-    use-cycle-modes;  // Optional: cycle through all modes
 
     // Layer-based properties are ignored when using behavior switching
 };
 ```
-
-### Benefits
-
-- **No empty layers required**: Switch modes using dedicated keys
-- **More intuitive**: Direct key press to change modes
-- **Flexible**: Toggle or cycle through modes as needed
-- **Visual feedback**: Can add LED indicators or OLED display updates
-- **Backward compatible**: Layer-based switching still works
-
-### Mode Switching Options
-
-1. **Toggle Mode** (`&paw_mode 0`): Switch between move and scroll
-2. **Cycle Mode** (`&paw_mode 1`): Cycle through all available modes:
-   - Move → Scroll → Horizontal Scroll → Snipe → Scroll Snipe → Horizontal Scroll Snipe → Move
 
 ### Complete Example
 
@@ -472,7 +563,6 @@ trackball: trackball@0 {
 
         // Use behavior-based switching
         switch-method = "toggle";
-        use-cycle-modes;
 
         // Sensitivity settings
         res-cpi = <1200>;
@@ -499,10 +589,54 @@ trackball: trackball@0 {
             bindings = <
                 &kp Q &kp W &kp E &kp R &kp T
                 &kp A &kp S &kp D &kp F &kp G
-                &kp Z &kp X &paw_mode 0 &paw_mode 1 &kp B
-                //           ↑Toggle   ↑Cycle
+                &kp Z &kp X &paw_mode 0 &paw_mode 1 &paw_mode 2
+                //           ↑Move/Scroll   ↑Snipe        ↑Scroll_Horizontal
             >;
         };
     };
 };
+```
+
+## モード切替機能
+
+1. **Move/Scroll トグル:** MOVE と SCROLL モードを切り替え
+2. **Normal/Snipe トグル:** MOVE、SNIPE、SCROLL、SCROLL_SNIPE モードを切り替え
+3. **Vertical/Horizontal トグル:** 縦スクロールと横スクロールモードを切り替え
+
+## 利用方法
+
+- キーバインディングで各モード切替機能を呼び出し、パラメータで動作を指定します。
+- モード変更やエラー時にログで状態を確認できます。
+- デバイス参照は初期化時に設定されます。
+
+## 初期化
+
+デバイスツリーが正しく設定され、`CONFIG_PAW3222_BEHAVIOR`オプションが有効な場合、自動的に初期化されます。
+
+```.conf
+CONFIG_PAW3222_BEHAVIOR=y
+
+---
+
+## トラブルシューティング
+
+- センサーが動作しない場合は、SPI や GPIO の配線を確認してください。
+- `irq-gpios` および（使用する場合）`power-gpios` の指定が正しいか確認してください。
+- Zephyr ログで起動時のエラーを確認してください。
+- ZMK のバージョンが要件を満たしているか確認してください。
+
+---
+
+## ライセンス
+
+```
+
+SPDX-License-Identifier: Apache-2.0
+
+Copyright 2024 Google LLC
+Modifications Copyright 2025 sekigon-gonnoc
+Modifications Copyright 2025 nuovotaka
+
+```
+
 ```
