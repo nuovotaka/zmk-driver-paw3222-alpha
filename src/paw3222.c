@@ -193,8 +193,7 @@ static int paw32xx_init(const struct device *dev)
           DT_INST_PROP_OR(n, rotation, CONFIG_PAW3222_SENSOR_ROTATION),                     \
       .scroll_tick =                                                                        \
           DT_INST_PROP_OR(n, scroll_tick, CONFIG_PAW3222_SCROLL_TICK),                      \
-      .switch_method = DT_ENUM_IDX_OR(DT_DRV_INST(n), switch_method, PAW32XX_SWITCH_LAYER), \
-      .use_cycle_modes = DT_INST_PROP_OR(n, use_cycle_modes, false)};                       \
+      .switch_method = DT_ENUM_IDX_OR(DT_DRV_INST(n), switch_method, PAW32XX_SWITCH_LAYER)};\
   static struct paw32xx_data paw32xx_data_##n;                                              \
   PM_DEVICE_DT_INST_DEFINE(n, paw32xx_pm_action);                                           \
   DEVICE_DT_INST_DEFINE(n, paw32xx_init, PM_DEVICE_DT_INST_GET(n),                          \
