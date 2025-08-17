@@ -119,7 +119,7 @@ static int paw32xx_vertical_horizontal_toggle_mode(void)
 
     struct paw32xx_data *data = paw3222_dev->data;
 
-    if (PAW32XX_MODE_MOVE || PAW32XX_MODE_SNIPE)
+    if (data->current_mode == PAW32XX_MODE_MOVE || data->current_mode == PAW32XX_MODE_SNIPE)
     {
         LOG_INF("PAW3222 not SCROLL MODE");
         return -ENODEV;
