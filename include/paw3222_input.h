@@ -21,7 +21,17 @@
  * @param dev PAW3222 device
  * @return Current input mode based on active ZMK layer
  */
-enum paw32xx_input_mode get_input_mode_for_current_layer(const struct device *dev);
+enum paw32xx_input_mode
+get_input_mode_for_current_layer(const struct device *dev);
+
+#ifdef CONFIG_PAW3222_BEHAVIOR
+/**
+ * @brief Set the PAW3222 device reference for behavior
+ *
+ * @param dev PAW3222 device
+ */
+void paw32xx_set_device_reference(const struct device *dev);
+#endif
 
 /**
  * @brief Motion timer handler
@@ -44,7 +54,7 @@ void paw32xx_motion_work_handler(struct k_work *work);
  * @param cb Callback structure
  * @param pins Pin mask
  */
-void paw32xx_motion_handler(const struct device *gpio_dev, struct gpio_callback *cb,
-                           uint32_t pins);
+void paw32xx_motion_handler(const struct device *gpio_dev,
+                            struct gpio_callback *cb, uint32_t pins);
 
 #endif /* PAW3222_INPUT_H_ */

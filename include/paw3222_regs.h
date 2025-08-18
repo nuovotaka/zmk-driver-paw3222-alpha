@@ -36,7 +36,8 @@
 /* Operation Mode Register Bits */
 #define OPERATION_MODE_SLP_ENH BIT(4)
 #define OPERATION_MODE_SLP2_ENH BIT(3)
-#define OPERATION_MODE_SLP_MASK (OPERATION_MODE_SLP_ENH | OPERATION_MODE_SLP2_ENH)
+#define OPERATION_MODE_SLP_MASK                                                \
+  (OPERATION_MODE_SLP_ENH | OPERATION_MODE_SLP2_ENH)
 
 /* Configuration Register Bits */
 #define CONFIGURATION_PD_ENH BIT(3)
@@ -57,10 +58,12 @@
 
 /* Input Modes */
 enum paw32xx_input_mode {
-    PAW32XX_MOVE,
-    PAW32XX_SCROLL,                // Vertical scroll
-    PAW32XX_SCROLL_HORIZONTAL,     // Horizontal scroll
-    PAW32XX_SNIPE,                 // High-precision cursor movement (snipe)
+  PAW32XX_MOVE,
+  PAW32XX_SCROLL,                  // Vertical scroll
+  PAW32XX_SCROLL_HORIZONTAL,       // Horizontal scroll
+  PAW32XX_SNIPE,                   // High-precision cursor movement (snipe)
+  PAW32XX_SCROLL_SNIPE,            // High-precision vertical scroll (snipe)
+  PAW32XX_SCROLL_HORIZONTAL_SNIPE, // High-precision horizontal scroll (snipe)
 };
 
 #endif /* ZEPHYR_INCLUDE_PAW3222_REGS_H_ */

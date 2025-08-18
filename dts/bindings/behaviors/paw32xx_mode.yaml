@@ -1,0 +1,8 @@
+# Copyright 2025 nuovotaka
+# SPDX-License-Identifier: Apache-2.0
+
+description: PAW3222 input mode switching behavior
+
+compatible: "paw32xx,mode"
+
+include: one_param.yaml

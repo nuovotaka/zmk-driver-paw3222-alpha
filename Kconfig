@@ -43,6 +43,24 @@ config PAW3222_SNIPE_DIVISOR
       In snipe mode, cursor movement is divided by this value for ultra-precision.
       Range: 1 (no reduction) to 10 (very low sensitivity).
 
+config PAW3222_SCROLL_SNIPE_DIVISOR
+    int "Scroll snipe mode sensitivity divisor"
+    range 1 10
+    default 3
+    help
+      Divisor for scroll snipe mode sensitivity (higher values = lower sensitivity).
+      In scroll snipe mode, scroll movement is divided by this value for ultra-precision scrolling.
+      Range: 1 (no reduction) to 10 (very low sensitivity).
+
+config PAW3222_SCROLL_SNIPE_TICK
+    int "Scroll snipe mode tick threshold"
+    range 1 255
+    default 20
+    help
+      Threshold for scroll movement in snipe mode (delta value above which scroll is triggered).
+      Higher values make snipe scrolling less sensitive, allowing for more precise control.
+      Should typically be higher than regular scroll-tick for finer control.
+
 config PAW3222_SENSOR_ROTATION
     int
     default 0
@@ -50,5 +68,12 @@ config PAW3222_SENSOR_ROTATION
       Default sensor rotation angle in degrees.
       This value is used when rotation is not specified in device tree.
       Valid values are 0, 90, 180, or 270 degrees.
+
+config PAW3222_BEHAVIOR
+    bool "Enable PAW3222 behavior support"
+    default n
+    help
+      Enable ZMK behavior support for PAW3222 mode switching.
+      This allows using &paw_mode behavior in keymaps.
 
 endif # PAW3222
