@@ -100,7 +100,6 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
 
         // Alternative: Use behavior-based switching instead of layers
         // switch-method = "toggle";   // "layer", "toggle", "hold", "combo"
-        // use-cycle-modes;            // Cycle through all modes instead of just toggle
     };
 };
 ```
@@ -615,6 +614,7 @@ trackball: trackball@0 {
 
 ```.conf
 CONFIG_PAW3222_BEHAVIOR=y
+```
 
 ---
 
@@ -636,7 +636,5 @@ SPDX-License-Identifier: Apache-2.0
 Copyright 2024 Google LLC
 Modifications Copyright 2025 sekigon-gonnoc
 Modifications Copyright 2025 nuovotaka
-
-```
 
 ```
