@@ -38,18 +38,18 @@ static int paw32xx_change_mode(enum paw32xx_current_mode new_mode)
         return -ENODEV;
     }
 
-    struct paw32xx_data *data = paw3222_dev->data;
+    struct paw32xx_data *data = (struct paw32xx_data *)paw3222_dev->data;
     data->current_mode = new_mode;
-    
+
     const char* mode_names[] = {
-        "MOVE", "SCROLL", "SCROLL_HORIZONTAL", 
+        "MOVE", "SCROLL", "SCROLL_HORIZONTAL",
         "SNIPE", "SCROLL_SNIPE", "SCROLL_HORIZONTAL_SNIPE"
     };
-    
-    if (new_mode < ARRAY_SIZE(mode_names)) {
+
+    if ((int)new_mode >= 0 && new_mode < ARRAY_SIZE(mode_names)) {
         LOG_INF("Switched to %s mode", mode_names[new_mode]);
     }
-    
+
     return 0;
 }
 
@@ -144,7 +144,7 @@ static int on_paw32xx_mode_binding_pressed(
 {
     uint32_t param1 = binding->param1;
 
-    LOG_DBG("PAW32xx mode binding pressed: param1=%d, param1);
+    LOG_DBG("PAW32xx mode binding pressed: param1=%d", param1);
 
     switch (param1) {
         case 0: // Move <-> Scroll Toggle mode
@@ -168,15 +168,15 @@ static int on_paw32xx_mode_binding_released(
 {
     uint32_t param1 = binding->param1;
 
-    LOG_DBG("PAW32xx mode binding released: param1=%d, param1);
+    LOG_DBG("PAW32xx mode binding released: param1=%d", param1);
 
     switch (param1) {
         case 0: // Toggle modes - no action on release
         case 1:
         case 2:
-            return ZMK_BEHAVIOR_OPAQUE;
+            return 0;
         default:
-            return ZMK_BEHAVIOR_OPAQUE;
+            return 0;
     }
 }
 
