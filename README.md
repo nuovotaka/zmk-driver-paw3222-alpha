@@ -91,15 +91,15 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
         // scroll-tick = <10>;  // default:10
         // snipe-divisor = <2>; // default:2 (configurable via Kconfig)
         // snipe-layers = <5>;
-        // scroll-layers = <6 7 8 9>;
-        // scroll-horizontal-layers = <7 9>;
-        // scroll-snipe-layers = <10>;
-        // scroll-horizontal-snipe-layers = <11>;
+        // scroll-layers = <6>;
+        // scroll-horizontal-layers = <7>;
+        // scroll-snipe-layers = <8>
+        // scroll-horizontal-snipe-layers = <9>;
         // scroll-snipe-divisor = <3>; // default:3 (configurable via Kconfig)
         // scroll-snipe-tick = <20>;   // default:20 (configurable via Kconfig)
 
         // Alternative: Use behavior-based switching instead of layers
-        // switch-method = "toggle";   // "layer", "toggle", "hold", "combo"
+        // switch-method = "toggle";   // "layer", "toggle"
     };
 };
 ```
@@ -415,8 +415,10 @@ manifest:
         // scroll-tick = <10>;  // デフォルト:10
         // snipe-divisor = <2>; // デフォルト:2 (Kconfigで設定可能)
         // snipe-layers = <5>;
-        // scroll-layers = <6 7 8 9>;
-        // scroll-horizontal-layers = <7 9>;
+        // scroll-layers = <6>;
+        // scroll-horizontal-layers = <7>;
+        // scroll-snipe-layers = <8>
+        // scroll-horizontal-snipe-layers = <9>;
     };
 };
 ```
