@@ -73,8 +73,6 @@ struct paw32xx_config {
 
   // Mode switching configuration
   enum paw32xx_mode_switch_method switch_method;
-  bool use_cycle_modes; // If true, cycle through modes; if false, toggle
-                        // between move and scroll
 };
 
 /**
