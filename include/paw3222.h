@@ -26,8 +26,6 @@
 enum paw32xx_mode_switch_method {
   PAW32XX_SWITCH_LAYER,  // Original layer-based switching
   PAW32XX_SWITCH_TOGGLE, // Toggle key based switching
-  PAW32XX_SWITCH_HOLD,   // Hold key based switching
-  PAW32XX_SWITCH_COMBO,  // Key combination based switching
 };
 
 /**
@@ -75,8 +73,6 @@ struct paw32xx_config {
 
   // Mode switching configuration
   enum paw32xx_mode_switch_method switch_method;
-  bool use_cycle_modes; // If true, cycle through modes; if false, toggle
-                        // between move and scroll
 };
 
 /**
