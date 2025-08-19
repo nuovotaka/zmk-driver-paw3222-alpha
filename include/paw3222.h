@@ -26,8 +26,6 @@
 enum paw32xx_mode_switch_method {
   PAW32XX_SWITCH_LAYER,  // Original layer-based switching
   PAW32XX_SWITCH_TOGGLE, // Toggle key based switching
-  PAW32XX_SWITCH_HOLD,   // Hold key based switching
-  PAW32XX_SWITCH_COMBO,  // Key combination based switching
 };
 
 /**
