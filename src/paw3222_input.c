@@ -117,9 +117,9 @@ static int16_t calculate_scroll_y(int16_t x, int16_t y, uint16_t rotation) {
   case 90:
     return x;
   case 180:
-    return -y;
+    return (y == INT16_MIN) ? INT16_MAX : -y;
   case 270:
-    return -x;
+    return (x == INT16_MIN) ? INT16_MAX : -x;
   default:
     return y;
   }
