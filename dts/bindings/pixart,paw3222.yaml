@@ -118,12 +118,8 @@ properties:
     enum:
       - "layer"
       - "toggle"
-      - "hold"
-      - "combo"
     default: "layer"
     description: |
       Method for switching input modes:
       - "layer": Use ZMK layers (original method)
       - "toggle": Use toggle key behavior
-      - "hold": Use hold key behavior
-      - "combo": Use key combination
