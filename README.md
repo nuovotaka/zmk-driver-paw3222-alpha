@@ -13,8 +13,11 @@ This driver enables use of the PIXART PAW3222 optical sensor with the ZMK framew
 - Runtime CPI (resolution) adjustment
 - Power management and low-power modes
 - Optional power GPIO support
-- **Mode Switching:** Toggle between MOVE, SCROLL, SNIPE, and HORIZONTAL SCROLL modes.
-- **Behavior API Integration:** Implements Zephyr's behavior driver API for seamless key binding.
+- **Toggle-Based Mode Switching:** Three independent toggle functions for flexible mode control:
+  - **Move/Scroll Toggle:** Switch between cursor movement and scroll modes
+  - **Normal/Snipe Toggle:** Enable/disable high-precision (snipe) mode for both cursor and scroll
+  - **Vertical/Horizontal Toggle:** Switch scroll direction between vertical and horizontal
+- **Behavior API Integration:** Implements Zephyr's behavior driver API for seamless key binding
 
 ---
 
@@ -272,7 +275,7 @@ trackball: trackball@0 {
                 &kp Q &kp W &kp E &kp R &kp T
                 &kp A &kp S &kp D &kp F &kp G
                 &kp Z &kp X &paw_mode 0 &paw_mode 1 &paw_mode 2
-                //           ↑Move/Scroll   ↑Snipe        ↑Scroll_Horizontal
+                //           ↑Move/Scroll   ↑Normal/Snipe  ↑Vertical/Horizontal
             >;
         };
     };
@@ -281,9 +284,37 @@ trackball: trackball@0 {
 
 ## Mode Switching Functions
 
-1. **Move/Scroll Toggle:** Switches between MOVE and SCROLL modes.
-2. **Normal/Snipe Toggle:** Switches between MOVE, SNIPE, SCROLL, and SCROLL_SNIPE modes.
-3. **Vertical/Horizontal Toggle:** Switches between vertical and horizontal scroll modes.
+The driver provides three independent toggle functions that can be combined for flexible mode control:
+
+1. **Move/Scroll Toggle (Parameter 0):**
+
+   - Switches between cursor movement (MOVE/SNIPE) and scroll modes (SCROLL/SCROLL_SNIPE)
+   - When in MOVE or SNIPE mode: switches to SCROLL mode
+   - When in any SCROLL mode: switches back to MOVE mode
+
+2. **Normal/Snipe Toggle (Parameter 1):**
+
+   - Toggles high-precision (snipe) mode on/off for current operation type
+   - MOVE ↔ SNIPE (for cursor movement)
+   - SCROLL ↔ SCROLL_SNIPE (for vertical scrolling)
+   - SCROLL_HORIZONTAL ↔ SCROLL_HORIZONTAL_SNIPE (for horizontal scrolling)
+
+3. **Vertical/Horizontal Toggle (Parameter 2):**
+   - Switches scroll direction between vertical and horizontal
+   - Only works when already in a scroll mode (not MOVE/SNIPE)
+   - SCROLL ↔ SCROLL_HORIZONTAL
+   - SCROLL_SNIPE ↔ SCROLL_HORIZONTAL_SNIPE
+
+### Mode Combinations
+
+By combining these toggles, you can access all six available modes:
+
+- **MOVE:** Default cursor movement
+- **SNIPE:** High-precision cursor movement
+- **SCROLL:** Vertical scrolling
+- **SCROLL_SNIPE:** High-precision vertical scrolling
+- **SCROLL_HORIZONTAL:** Horizontal scrolling
+- **SCROLL_HORIZONTAL_SNIPE:** High-precision horizontal scrolling
 
 ## Usage
 
@@ -295,7 +326,7 @@ trackball: trackball@0 {
 
 The driver is initialized automatically if the device tree is configured correctly and the `CONFIG_PAW3222_BEHAVIOR` option is enabled.
 
-```.conf
+```
 CONFIG_PAW3222_BEHAVIOR=y
 
 ```
@@ -337,7 +368,10 @@ Modifications Copyright 2025 nuovotaka
 - 実行時 CPI（解像度）変更対応
 - 電源管理・低消費電力モード
 - オプションで電源 GPIO 制御
-- **モード切替:** MOVE、SCROLL、SNIPE、HORIZONTAL SCROLL モードを切り替え可能
+- **トグルベースのモード切替:** 柔軟なモード制御のための 3 つの独立したトグル機能：
+  - **Move/Scroll トグル:** カーソル移動とスクロールモードの切り替え
+  - **Normal/Snipe トグル:** カーソルとスクロール両方の高精度（スナイプ）モードの有効/無効
+  - **Vertical/Horizontal トグル:** スクロール方向を垂直と水平で切り替え
 - **ビヘイビア API 統合:** Zephyr のビヘイビアドライバ API を実装し、キー割り当てに対応
 
 ---
@@ -591,7 +625,7 @@ trackball: trackball@0 {
                 &kp Q &kp W &kp E &kp R &kp T
                 &kp A &kp S &kp D &kp F &kp G
                 &kp Z &kp X &paw_mode 0 &paw_mode 1 &paw_mode 2
-                //           ↑Move/Scroll   ↑Snipe        ↑Scroll_Horizontal
+                //           ↑Move/Scroll   ↑Normal/Snipe  ↑Vertical/Horizontal
             >;
         };
     };
@@ -600,9 +634,37 @@ trackball: trackball@0 {
 
 ## モード切替機能
 
-1. **Move/Scroll トグル:** MOVE と SCROLL モードを切り替え
-2. **Normal/Snipe トグル:** MOVE、SNIPE、SCROLL、SCROLL_SNIPE モードを切り替え
-3. **Vertical/Horizontal トグル:** 縦スクロールと横スクロールモードを切り替え
+ドライバーは 3 つの独立したトグル機能を提供し、柔軟なモード制御を可能にします：
+
+1. **Move/Scroll トグル (パラメータ 0):**
+
+   - カーソル移動（MOVE/SNIPE）とスクロールモード（SCROLL/SCROLL_SNIPE）を切り替え
+   - MOVE または SNIPE モード時：SCROLL モードに切り替え
+   - 任意の SCROLL モード時：MOVE モードに戻る
+
+2. **Normal/Snipe トグル (パラメータ 1):**
+
+   - 現在の操作タイプで高精度（スナイプ）モードのオン/オフを切り替え
+   - MOVE ↔ SNIPE（カーソル移動用）
+   - SCROLL ↔ SCROLL_SNIPE（垂直スクロール用）
+   - SCROLL_HORIZONTAL ↔ SCROLL_HORIZONTAL_SNIPE（水平スクロール用）
+
+3. **Vertical/Horizontal トグル (パラメータ 2):**
+   - スクロール方向を垂直と水平で切り替え
+   - スクロールモード時のみ動作（MOVE/SNIPE では無効）
+   - SCROLL ↔ SCROLL_HORIZONTAL
+   - SCROLL_SNIPE ↔ SCROLL_HORIZONTAL_SNIPE
+
+### モードの組み合わせ
+
+これらのトグルを組み合わせることで、利用可能な 6 つのモード全てにアクセスできます：
+
+- **MOVE:** デフォルトのカーソル移動
+- **SNIPE:** 高精度カーソル移動
+- **SCROLL:** 垂直スクロール
+- **SCROLL_SNIPE:** 高精度垂直スクロール
+- **SCROLL_HORIZONTAL:** 水平スクロール
+- **SCROLL_HORIZONTAL_SNIPE:** 高精度水平スクロール
 
 ## 利用方法
 
@@ -614,7 +676,7 @@ trackball: trackball@0 {
 
 デバイスツリーが正しく設定され、`CONFIG_PAW3222_BEHAVIOR`オプションが有効な場合、自動的に初期化されます。
 
-```.conf
+```
 CONFIG_PAW3222_BEHAVIOR=y
 ```
 
