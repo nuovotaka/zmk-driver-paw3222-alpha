@@ -166,10 +166,8 @@ void paw32xx_motion_work_handler(struct k_work *work) {
   // orientation
   int16_t scroll_y = calculate_scroll_y(x, y, cfg->rotation);
 
-  // Debug log (conditional compilation for performance)
-#if CONFIG_ZMK_LOG_LEVEL >= LOG_LEVEL_DBG
+  // Debug log
   LOG_DBG("x=%d y=%d scroll_y=%d rotation=%d", x, y, scroll_y, cfg->rotation);
-#endif
 
   enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
