@@ -166,8 +166,10 @@ void paw32xx_motion_work_handler(struct k_work *work) {
   // orientation
   int16_t scroll_y = calculate_scroll_y(x, y, cfg->rotation);
 
-  // Debug log
+  // Debug log (conditional compilation for performance)
+#if CONFIG_ZMK_LOG_LEVEL >= LOG_LEVEL_DBG
   LOG_DBG("x=%d y=%d scroll_y=%d rotation=%d", x, y, scroll_y, cfg->rotation);
+#endif
 
   enum paw32xx_input_mode input_mode = get_input_mode_for_current_layer(dev);
 
@@ -179,8 +181,12 @@ void paw32xx_motion_work_handler(struct k_work *work) {
         (cfg->snipe_cpi > 0) ? cfg->snipe_cpi : CONFIG_PAW3222_SNIPE_CPI;
   }
   if (data->current_cpi != target_cpi) {
-    paw32xx_set_resolution(dev, target_cpi);
-    data->current_cpi = target_cpi;
+    ret = paw32xx_set_resolution(dev, target_cpi);
+    if (ret == 0) {
+      data->current_cpi = target_cpi;
+    } else {
+      LOG_WRN("Failed to set CPI to %d: %d", target_cpi, ret);
+    }
   }
 
   switch (input_mode) {

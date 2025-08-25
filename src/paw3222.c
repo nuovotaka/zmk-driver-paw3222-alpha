@@ -102,6 +102,7 @@ static int paw32xx_init(const struct device *dev)
   if (ret != 0)
   {
     LOG_ERR("Device configuration failed: %d", ret);
+    gpio_remove_callback_dt(&cfg->irq_gpio, &data->motion_cb);
     return ret;
   }
 
@@ -110,6 +111,7 @@ static int paw32xx_init(const struct device *dev)
   if (ret != 0)
   {
     LOG_ERR("Motion interrupt configuration failed: %d", ret);
+    gpio_remove_callback_dt(&cfg->irq_gpio, &data->motion_cb);
     return ret;
   }
 
@@ -117,6 +119,8 @@ static int paw32xx_init(const struct device *dev)
   if (ret < 0)
   {
     LOG_ERR("Failed to enable runtime power management: %d", ret);
+    gpio_remove_callback_dt(&cfg->irq_gpio, &data->motion_cb);
+    gpio_pin_interrupt_configure_dt(&cfg->irq_gpio, GPIO_INT_DISABLE);
     return ret;
   }
 
