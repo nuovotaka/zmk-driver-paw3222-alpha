@@ -18,10 +18,26 @@
 /**
  * @brief Get the input mode for the current active layer
  *
- * @param dev PAW3222 device
- * @return Current input mode based on active ZMK layer
+ * @param dev PAW3222 device (must not be NULL)
+ * @return Current input mode based on active ZMK layer or behavior state
+ * @retval PAW32XX_MOVE Default cursor movement mode
+ * @retval PAW32XX_SCROLL Vertical scroll mode
+ * @retval PAW32XX_SCROLL_HORIZONTAL Horizontal scroll mode
+ * @retval PAW32XX_SNIPE High-precision cursor mode
+ * @retval PAW32XX_SCROLL_SNIPE High-precision vertical scroll mode
+ * @retval PAW32XX_SCROLL_HORIZONTAL_SNIPE High-precision horizontal scroll mode
  */
-enum paw32xx_input_mode get_input_mode_for_current_layer(const struct device *dev);
+enum paw32xx_input_mode
+get_input_mode_for_current_layer(const struct device *dev);
+
+#ifdef CONFIG_PAW3222_BEHAVIOR
+/**
+ * @brief Set the PAW3222 device reference for behavior
+ *
+ * @param dev PAW3222 device
+ */
+void paw32xx_set_device_reference(const struct device *dev);
+#endif
 
 /**
  * @brief Motion timer handler
@@ -33,7 +49,10 @@ void paw32xx_motion_timer_handler(struct k_timer *timer);
 /**
  * @brief Motion work handler - processes sensor data
  *
- * @param work Work item to process
+ * This function reads motion data from the sensor and generates appropriate
+ * input events based on the current input mode.
+ *
+ * @param work Work item to process (must not be NULL)
  */
 void paw32xx_motion_work_handler(struct k_work *work);
 
@@ -44,7 +63,7 @@ void paw32xx_motion_work_handler(struct k_work *work);
  * @param cb Callback structure
  * @param pins Pin mask
  */
-void paw32xx_motion_handler(const struct device *gpio_dev, struct gpio_callback *cb,
-                           uint32_t pins);
+void paw32xx_motion_handler(const struct device *gpio_dev,
+                            struct gpio_callback *cb, uint32_t pins);
 
 #endif /* PAW3222_INPUT_H_ */

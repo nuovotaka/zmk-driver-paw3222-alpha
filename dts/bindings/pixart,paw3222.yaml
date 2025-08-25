@@ -81,3 +81,45 @@ properties:
     description: |
       Threshold for scroll movement (delta value above which scroll is triggered).
       If not specified, defaults to the value of CONFIG_PAW3222_SCROLL_TICK.
+
+  scroll-snipe-layers:
+    type: array
+    required: false
+    description: |
+      List of layer numbers to switch between using the scroll-snipe-layers feature.
+      Provides high-precision vertical scrolling.
+
+  scroll-horizontal-snipe-layers:
+    type: array
+    required: false
+    description: |
+      List of layer numbers to switch between using the horizontal scroll-snipe feature.
+      Provides high-precision horizontal scrolling.
+
+  scroll-snipe-divisor:
+    type: int
+    required: false
+    description: |
+      Additional precision divisor for scroll snipe mode. Scroll movement values are divided 
+      by this factor for ultra-precision scrolling. Higher values = more precision.
+      If not specified, defaults to CONFIG_PAW3222_SCROLL_SNIPE_DIVISOR.
+
+  scroll-snipe-tick:
+    type: int
+    required: false
+    description: |
+      Threshold for scroll movement in snipe mode (delta value above which scroll is triggered).
+      Should typically be higher than regular scroll-tick for finer control.
+      If not specified, defaults to CONFIG_PAW3222_SCROLL_SNIPE_TICK.
+
+  switch-method:
+    type: string
+    required: false
+    enum:
+      - "layer"
+      - "toggle"
+    default: "layer"
+    description: |
+      Method for switching input modes:
+      - "layer": Use ZMK layers (original method)
+      - "toggle": Use toggle key behavior
