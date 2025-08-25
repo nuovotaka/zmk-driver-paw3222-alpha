@@ -179,8 +179,12 @@ void paw32xx_motion_work_handler(struct k_work *work) {
         (cfg->snipe_cpi > 0) ? cfg->snipe_cpi : CONFIG_PAW3222_SNIPE_CPI;
   }
   if (data->current_cpi != target_cpi) {
-    paw32xx_set_resolution(dev, target_cpi);
-    data->current_cpi = target_cpi;
+    ret = paw32xx_set_resolution(dev, target_cpi);
+    if (ret == 0) {
+      data->current_cpi = target_cpi;
+    } else {
+      LOG_WRN("Failed to set CPI to %d: %d", target_cpi, ret);
+    }
   }
 
   switch (input_mode) {

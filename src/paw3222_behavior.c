@@ -38,7 +38,7 @@ static int paw32xx_change_mode(enum paw32xx_current_mode new_mode)
         return -ENODEV;
     }
 
-    struct paw32xx_data *data = (struct paw32xx_data *)paw3222_dev->data;
+    struct paw32xx_data *data = paw3222_dev->data;
     data->current_mode = new_mode;
 
     const char* mode_names[] = {

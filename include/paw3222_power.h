@@ -25,18 +25,24 @@ int paw32xx_configure(const struct device *dev);
 /**
  * @brief Set resolution on a paw32xx device
  *
- * @param dev paw32xx device.
- * @param res_cpi CPI resolution, e.g. 200 to 3200.
+ * @param dev paw32xx device (must not be NULL)
+ * @param res_cpi CPI resolution (range: 608-4826, values below 608 are clamped)
  * @return 0 on success, negative error code on failure
+ * @retval -EINVAL if res_cpi is out of valid range
+ * @retval -EIO if SPI communication fails
  */
 int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
 
 /**
  * @brief Set force awake mode on a paw32xx device
  *
- * @param dev paw32xx device.
- * @param enable whether to enable or disable force awake mode.
+ * Force awake mode prevents the sensor from entering sleep mode automatically.
+ * This can improve response time but increases power consumption.
+ *
+ * @param dev paw32xx device (must not be NULL)
+ * @param enable true to enable force awake mode, false to allow sleep
  * @return 0 on success, negative error code on failure
+ * @retval -EIO if SPI communication fails
  */
 int paw32xx_force_awake(const struct device *dev, bool enable);
 

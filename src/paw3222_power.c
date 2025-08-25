@@ -83,6 +83,24 @@ int paw32xx_configure(const struct device *dev) {
     uint8_t val;
     int ret;
 
+    // Validate configuration values
+    if (cfg->rotation != 0 && cfg->rotation != 90 && 
+        cfg->rotation != 180 && cfg->rotation != 270) {
+        LOG_WRN("Invalid rotation %d, using 0", cfg->rotation);
+    }
+    
+    if (cfg->scroll_tick == 0) {
+        LOG_WRN("scroll_tick is 0, may cause excessive scroll events");
+    }
+
+    if (cfg->snipe_divisor == 0) {
+        LOG_WRN("snipe_divisor is 0, may cause division by zero");
+    }
+
+    if (cfg->scroll_snipe_divisor == 0) {
+        LOG_WRN("scroll_snipe_divisor is 0, may cause division by zero");
+    }
+
     ret = paw32xx_read_reg(dev, PAW32XX_PRODUCT_ID1, &val);
     if (ret < 0) {
         return ret;
@@ -111,6 +129,7 @@ int paw32xx_configure(const struct device *dev) {
 
 #ifdef CONFIG_PM_DEVICE
 int paw32xx_pm_action(const struct device *dev, enum pm_device_action action) {
+    const struct paw32xx_config *cfg = dev->config;
     int ret;
     uint8_t val;
 
