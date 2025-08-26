@@ -24,13 +24,42 @@ LOG_MODULE_REGISTER(paw32xx_behavior, CONFIG_ZMK_LOG_LEVEL);
 // Global pointer to the PAW3222 device (set during init)
 static const struct device *paw3222_dev = NULL;
 
-// Function to set the PAW3222 device reference
+/**
+ * @brief Set the global PAW3222 device reference for behavior system
+ *
+ * Stores a global reference to the PAW3222 device instance for use by the
+ * behavior driver system. This allows behavior key bindings to control the
+ * sensor's input mode without requiring direct device access.
+ *
+ * @param dev PAW3222 device pointer to store globally
+ * 
+ * @note This function is called automatically during device initialization
+ *       when CONFIG_PAW3222_BEHAVIOR is enabled.
+ * 
+ * @warning Only supports a single PAW3222 device instance when using behaviors.
+ *          Multiple devices would overwrite the global reference.
+ */
 void paw32xx_set_device_reference(const struct device *dev)
 {
     paw3222_dev = dev;
 }
 
-// Helper function to change mode
+/**
+ * @brief Change the PAW3222 input mode and log the change
+ *
+ * Updates the current input mode of the PAW3222 sensor and logs the change
+ * for debugging purposes. This is a helper function used by the various
+ * toggle mode functions.
+ *
+ * @param new_mode The new input mode to set
+ * 
+ * @return 0 on success, negative error code on failure
+ * @retval 0 Mode changed successfully
+ * @retval -ENODEV PAW3222 device not initialized or not available
+ * 
+ * @note This function updates the mode immediately and the change takes
+ *       effect on the next motion event.
+ */
 static int paw32xx_change_mode(enum paw32xx_current_mode new_mode)
 {
     if (!paw3222_dev) {
@@ -53,7 +82,22 @@ static int paw32xx_change_mode(enum paw32xx_current_mode new_mode)
     return 0;
 }
 
-// Move Scroll Toggle between move and scroll modes
+/**
+ * @brief Toggle between cursor movement and scroll modes
+ *
+ * Switches between cursor movement modes (MOVE/SNIPE) and scroll modes
+ * (SCROLL/SCROLL_SNIPE/SCROLL_HORIZONTAL/SCROLL_HORIZONTAL_SNIPE).
+ * 
+ * Mode transitions:
+ * - From MOVE or SNIPE: Switch to SCROLL
+ * - From any SCROLL mode: Switch to MOVE
+ *
+ * @return 0 on success, negative error code on failure
+ * @retval 0 Mode toggled successfully
+ * @retval -ENODEV PAW3222 device not initialized
+ * 
+ * @note This implements parameter 0 of the paw_mode behavior
+ */
 static int paw32xx_move_scroll_toggle_mode(void)
 {
     if (!paw3222_dev) {
@@ -78,7 +122,23 @@ static int paw32xx_move_scroll_toggle_mode(void)
     }
 }
 
-// Normal Snipe Toggle between move and scroll modes
+/**
+ * @brief Toggle between normal and high-precision (snipe) modes
+ *
+ * Toggles the high-precision (snipe) mode for the current operation type.
+ * This affects sensitivity but maintains the same operation (move vs scroll).
+ * 
+ * Mode transitions:
+ * - MOVE ↔ SNIPE (cursor movement)
+ * - SCROLL ↔ SCROLL_SNIPE (vertical scrolling)
+ * - SCROLL_HORIZONTAL ↔ SCROLL_HORIZONTAL_SNIPE (horizontal scrolling)
+ *
+ * @return 0 on success, negative error code on failure
+ * @retval 0 Mode toggled successfully
+ * @retval -ENODEV PAW3222 device not initialized or unsupported mode
+ * 
+ * @note This implements parameter 1 of the paw_mode behavior
+ */
 static int paw32xx_normal_snipe_toggle_mode(void)
 {
     if (!paw3222_dev) {
@@ -107,7 +167,24 @@ static int paw32xx_normal_snipe_toggle_mode(void)
     }
 }
 
-// Vertical Horizontal Toggle between scroll modes
+/**
+ * @brief Toggle between vertical and horizontal scroll directions
+ *
+ * Switches scroll direction between vertical and horizontal while maintaining
+ * the same precision level (normal vs snipe). Only works when already in a
+ * scroll mode - has no effect in cursor movement modes.
+ * 
+ * Mode transitions:
+ * - SCROLL ↔ SCROLL_HORIZONTAL
+ * - SCROLL_SNIPE ↔ SCROLL_HORIZONTAL_SNIPE
+ * - MOVE/SNIPE: No effect (logs info message)
+ *
+ * @return 0 on success, negative error code on failure
+ * @retval 0 Mode toggled successfully
+ * @retval -ENODEV PAW3222 device not initialized, not in scroll mode, or unsupported mode
+ * 
+ * @note This implements parameter 2 of the paw_mode behavior
+ */
 static int paw32xx_vertical_horizontal_toggle_mode(void)
 {
     if (!paw3222_dev) {
@@ -137,7 +214,25 @@ static int paw32xx_vertical_horizontal_toggle_mode(void)
     }
 }
 
-// Behavior implementation for PAW3222 mode switching
+/**
+ * @brief Handle PAW3222 mode behavior key press events
+ *
+ * Called when a paw_mode behavior key is pressed. Dispatches to the appropriate
+ * mode toggle function based on the behavior parameter.
+ *
+ * Supported parameters:
+ * - 0: Move/Scroll toggle
+ * - 1: Normal/Snipe toggle  
+ * - 2: Vertical/Horizontal toggle
+ *
+ * @param binding Pointer to the behavior binding containing parameters
+ * @param binding_event Event information (unused)
+ * 
+ * @return 0 on success, negative error code on failure
+ * @retval 0 Mode change completed successfully
+ * @retval -EINVAL Unknown parameter value
+ * @retval -ENODEV PAW3222 device not available or mode change failed
+ */
 static int on_paw32xx_mode_binding_pressed(
     struct zmk_behavior_binding *binding,
     struct zmk_behavior_binding_event binding_event)
@@ -162,6 +257,18 @@ static int on_paw32xx_mode_binding_pressed(
     }
 }
 
+/**
+ * @brief Handle PAW3222 mode behavior key release events
+ *
+ * Called when a paw_mode behavior key is released. For toggle-based behaviors,
+ * no action is typically needed on key release, so this function serves as
+ * a placeholder for the behavior API.
+ *
+ * @param binding Pointer to the behavior binding containing parameters
+ * @param binding_event Event information (unused)
+ * 
+ * @return Always returns 0 (no action needed for toggle behaviors)
+ */
 static int on_paw32xx_mode_binding_released(
     struct zmk_behavior_binding *binding,
     struct zmk_behavior_binding_event binding_event)
@@ -194,6 +301,19 @@ static const struct behavior_driver_api behavior_paw32xx_mode_driver_api = {
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
+/**
+ * @brief Initialize the PAW3222 mode behavior driver
+ *
+ * Initializes the behavior driver for PAW3222 mode switching. This function
+ * is called during system initialization to set up the behavior system.
+ *
+ * @param dev Behavior device instance (unused)
+ * 
+ * @return Always returns 0 (initialization always succeeds)
+ * 
+ * @note The actual PAW3222 device reference is set separately during
+ *       PAW3222 device initialization via paw32xx_set_device_reference().
+ */
 static int behavior_paw32xx_mode_init(const struct device *dev)
 {
     LOG_DBG("PAW3222 behavior initialized");
