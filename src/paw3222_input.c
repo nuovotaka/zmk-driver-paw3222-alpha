@@ -34,7 +34,20 @@
 
 LOG_MODULE_DECLARE(paw32xx);
 
-// Helper function for absolute value of int16_t (memory optimized)
+/**
+ * @brief Calculate absolute value of int16_t (memory optimized)
+ *
+ * Computes the absolute value of a 16-bit signed integer without using
+ * the standard library abs() function. This inline function is optimized
+ * for memory usage and performance in the motion processing path.
+ *
+ * @param value Input signed 16-bit integer
+ * 
+ * @return Absolute value of the input
+ * 
+ * @note This function handles the INT16_MIN case correctly by returning
+ *       the positive equivalent without overflow issues.
+ */
 static inline int16_t abs_int16(int16_t value) {
   return (value < 0) ? -value : value;
 }
@@ -110,6 +123,26 @@ get_input_mode_for_current_layer(const struct device *dev) {
   return PAW32XX_MOVE;
 }
 
+/**
+ * @brief Calculate scroll Y coordinate based on sensor rotation
+ *
+ * Transforms the raw sensor coordinates to ensure that Y-axis movement
+ * always triggers scrolling regardless of the physical sensor orientation.
+ * This allows the sensor to be mounted at different angles while maintaining
+ * consistent scroll behavior.
+ *
+ * @param x Raw X coordinate from sensor
+ * @param y Raw Y coordinate from sensor  
+ * @param rotation Physical sensor rotation in degrees (0, 90, 180, 270)
+ * 
+ * @return Transformed Y coordinate for scroll calculations
+ * 
+ * @note For cursor movement, use ZMK input-processors like zip_xy_transform
+ *       instead of this function. This is specifically for scroll modes.
+ * 
+ * @note Handles INT16_MIN overflow case to prevent undefined behavior
+ *       when negating the minimum signed integer value.
+ */
 static int16_t calculate_scroll_y(int16_t x, int16_t y, uint16_t rotation) {
   switch (rotation) {
   case 0:

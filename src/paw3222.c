@@ -28,6 +28,28 @@ LOG_MODULE_REGISTER(paw32xx, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
+/**
+ * @brief Initialize the PAW3222 device
+ *
+ * Performs complete initialization of the PAW3222 optical sensor including:
+ * - SPI interface validation
+ * - GPIO configuration for motion interrupt and power control
+ * - Work queue and timer initialization
+ * - Sensor hardware configuration and validation
+ * - Power management setup
+ * - Interrupt configuration
+ *
+ * @param dev PAW3222 device instance to initialize
+ * 
+ * @return 0 on success, negative error code on failure
+ * @retval 0 Device initialized successfully
+ * @retval -ENODEV SPI bus or GPIO not ready
+ * @retval -EIO Hardware communication failure
+ * @retval -ENOTSUP Unsupported sensor or invalid product ID
+ * 
+ * @note This function is called automatically during system initialization
+ *       and should not be called directly by application code.
+ */
 static int paw32xx_init(const struct device *dev)
 {
   const struct paw32xx_config *cfg = dev->config;
