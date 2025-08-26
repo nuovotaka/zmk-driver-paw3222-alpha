@@ -333,6 +333,117 @@ CONFIG_PAW3222_BEHAVIOR=y
 
 ---
 
+## Split Keyboard Configuration
+
+For split keyboards with separate MCUs, you can configure different trackball behaviors for left and right sides.
+
+### Independent Trackball Configuration
+
+Each side can have completely different settings by configuring separate PAW3222 instances:
+
+#### Left Side Configuration (left.overlay)
+
+```dts
+&spi0 {
+    trackball_left: trackball@0 {
+        compatible = "pixart,paw3222";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        // Left side: Optimized for cursor movement
+        res-cpi = <800>;           // Lower sensitivity
+        scroll-tick = <15>;        // Less sensitive scrolling
+        snipe-divisor = <3>;       // High precision mode
+        switch-method = "toggle";
+    };
+};
+```
+
+#### Right Side Configuration (right.overlay)
+
+```dts
+&spi0 {
+    trackball_right: trackball@0 {
+        compatible = "pixart,paw3222";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        // Right side: Optimized for scrolling
+        res-cpi = <1200>;          // Higher sensitivity
+        scroll-tick = <8>;         // More sensitive scrolling
+        snipe-divisor = <2>;       // Standard precision
+        switch-method = "toggle";
+    };
+};
+```
+
+### Different Behavior Assignments
+
+You can assign different mode switching behaviors to each side:
+
+#### Left Side Keymap
+
+```dts
+/ {
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                &kp Q &kp W &kp E
+                &kp A &paw_mode 0 &kp D  // Left: Move/Scroll toggle only
+                &kp Z &kp X &kp C
+            >;
+        };
+    };
+};
+```
+
+#### Right Side Keymap
+
+```dts
+/ {
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                &kp R &kp T &kp Y
+                &kp F &paw_mode 1 &kp H  // Right: Normal/Snipe toggle only
+                &kp V &kp B &kp N
+            >;
+        };
+    };
+};
+```
+
+### Use Case Examples
+
+1. **Specialized Roles:**
+
+   - Left trackball: Cursor movement only (low sensitivity)
+   - Right trackball: Scrolling only (high sensitivity)
+
+2. **Complementary Functions:**
+
+   - Left trackball: Coarse movement and vertical scrolling
+   - Right trackball: Fine movement and horizontal scrolling
+
+3. **Mode-Specific Optimization:**
+   - Left trackball: Optimized for design work (high precision)
+   - Right trackball: Optimized for browsing (fast scrolling)
+
+### Configuration Tips
+
+- Use different `res-cpi` values to optimize each side for its intended use
+- Adjust `scroll-tick` independently for different scrolling behaviors
+- Configure `snipe-divisor` based on precision requirements for each side
+- Each MCU maintains its own state, allowing completely independent operation
+
+---
+
 ## Troubleshooting
 
 - If the sensor does not work, check SPI and GPIO wiring.
@@ -679,6 +790,117 @@ trackball: trackball@0 {
 ```
 CONFIG_PAW3222_BEHAVIOR=y
 ```
+
+---
+
+## 分割キーボード設定
+
+分離した MCU を持つ分割キーボードでは、左右のトラックボールに異なる動作を設定できます。
+
+### 独立したトラックボール設定
+
+各サイドで完全に異なる設定を持つ PAW3222 インスタンスを設定できます：
+
+#### 左側設定 (left.overlay)
+
+```dts
+&spi0 {
+    trackball_left: trackball@0 {
+        compatible = "pixart,paw3222";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        // 左側：カーソル移動に最適化
+        res-cpi = <800>;           // 低感度
+        scroll-tick = <15>;        // スクロール感度低め
+        snipe-divisor = <3>;       // 高精度モード
+        switch-method = "toggle";
+    };
+};
+```
+
+#### 右側設定 (right.overlay)
+
+```dts
+&spi0 {
+    trackball_right: trackball@0 {
+        compatible = "pixart,paw3222";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+
+        // 右側：スクロールに最適化
+        res-cpi = <1200>;          // 高感度
+        scroll-tick = <8>;         // スクロール感度高め
+        snipe-divisor = <2>;       // 標準精度
+        switch-method = "toggle";
+    };
+};
+```
+
+### 異なるビヘイビア割り当て
+
+各サイドに異なるモード切替ビヘイビアを割り当てできます：
+
+#### 左側キーマップ
+
+```dts
+/ {
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                &kp Q &kp W &kp E
+                &kp A &paw_mode 0 &kp D  // 左：Move/Scrollトグルのみ
+                &kp Z &kp X &kp C
+            >;
+        };
+    };
+};
+```
+
+#### 右側キーマップ
+
+```dts
+/ {
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                &kp R &kp T &kp Y
+                &kp F &paw_mode 1 &kp H  // 右：Normal/Snipeトグルのみ
+                &kp V &kp B &kp N
+            >;
+        };
+    };
+};
+```
+
+### 使用例
+
+1. **専門的な役割分担:**
+
+   - 左トラックボール：カーソル移動専用（低感度）
+   - 右トラックボール：スクロール専用（高感度）
+
+2. **補完的な機能:**
+
+   - 左トラックボール：粗い移動と垂直スクロール
+   - 右トラックボール：細かい移動と水平スクロール
+
+3. **モード特化最適化:**
+   - 左トラックボール：デザイン作業用（高精度）
+   - 右トラックボール：ブラウジング用（高速スクロール）
+
+### 設定のコツ
+
+- 各サイドの用途に応じて異なる`res-cpi`値を使用
+- 異なるスクロール動作のために`scroll-tick`を独立調整
+- 各サイドの精度要件に基づいて`snipe-divisor`を設定
+- 各 MCU が独自の状態を維持するため、完全に独立した動作が可能
 
 ---
 
