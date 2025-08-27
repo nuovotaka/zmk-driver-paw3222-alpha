@@ -45,7 +45,7 @@ PAW3222 は、マウスやトラックボールなどのトラッキング用途
 
 ## インストール
 
-1. `west.yml` に ZMK モジュールとして追加：
+- `west.yml` に ZMK モジュールとして追加：
 
 ```yaml
 manifest:
@@ -69,6 +69,9 @@ manifest:
 ## デバイスツリー設定
 
 シールドまたはボード設定ファイル（`.overlay` または `.dtsi`）でセンサーを設定：
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
 
 ```dts
 &pinctrl {
@@ -117,6 +120,8 @@ manifest:
     };
 };
 ```
+
+</details>
 
 ---
 
@@ -203,6 +208,9 @@ Instead of using empty layers, you can use ZMK behaviors to switch input modes:
 
 ### Keymap の設定
 
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
+
 ```dts
 / {
     behaviors {
@@ -232,7 +240,12 @@ Instead of using empty layers, you can use ZMK behaviors to switch input modes:
 };
 ```
 
+</details>
+
 ### デバイスツリーの設定
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
 
 ```dts
 trackball: trackball@0 {
@@ -246,7 +259,12 @@ trackball: trackball@0 {
 };
 ```
 
+</details>
+
 ### Complete Example
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
 
 ```dts
 // In your .overlay file
@@ -292,6 +310,8 @@ trackball: trackball@0 {
     };
 };
 ```
+
+</details>
 
 ## モード切替機能
 
@@ -353,6 +373,9 @@ CONFIG_PAW3222_BEHAVIOR=y
 
 #### 左側設定 (left.overlay)
 
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
+
 ```dts
 &spi0 {
     trackball_left: trackball@0 {
@@ -370,7 +393,12 @@ CONFIG_PAW3222_BEHAVIOR=y
 };
 ```
 
+</details>
+
 #### 右側設定 (right.overlay)
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
 
 ```dts
 &spi0 {
@@ -389,11 +417,16 @@ CONFIG_PAW3222_BEHAVIOR=y
 };
 ```
 
+</details>
+
 ### 異なるビヘイビア割り当て
 
 各サイドに異なるモード切替ビヘイビアを割り当てできます：
 
 #### 左側キーマップ
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
 
 ```dts
 / {
@@ -411,7 +444,12 @@ CONFIG_PAW3222_BEHAVIOR=y
 };
 ```
 
+</details>
+
 #### 右側キーマップ
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">サンプルコード</summary>
 
 ```dts
 / {
@@ -428,6 +466,8 @@ CONFIG_PAW3222_BEHAVIOR=y
     };
 };
 ```
+
+</details>
 
 ### 使用例
 
