@@ -243,7 +243,15 @@ void paw32xx_motion_work_handler(struct k_work *work) {
     // protection)
     {
       int32_t temp = (int32_t)data->scroll_accumulator + scroll_y;
-      data->scroll_accumulator = CLAMP(temp, INT16_MIN, INT16_MAX);
+      if (temp > INT16_MAX) {
+        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
+        data->scroll_accumulator = INT16_MAX;
+      } else if (temp < INT16_MIN) {
+        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
+        data->scroll_accumulator = INT16_MIN;
+      } else {
+        data->scroll_accumulator = (int16_t)temp;
+      }
 
       // Send scroll event when accumulator exceeds threshold
       if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
@@ -259,7 +267,15 @@ void paw32xx_motion_work_handler(struct k_work *work) {
     // protection)
     {
       int32_t temp = (int32_t)data->scroll_accumulator + scroll_y;
-      data->scroll_accumulator = CLAMP(temp, INT16_MIN, INT16_MAX);
+      if (temp > INT16_MAX) {
+        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
+        data->scroll_accumulator = INT16_MAX;
+      } else if (temp < INT16_MIN) {
+        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
+        data->scroll_accumulator = INT16_MIN;
+      } else {
+        data->scroll_accumulator = (int16_t)temp;
+      }
 
       // Send scroll event when accumulator exceeds threshold
       if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
@@ -277,7 +293,15 @@ void paw32xx_motion_work_handler(struct k_work *work) {
       uint8_t divisor = MAX(1, cfg->scroll_snipe_divisor);
       int16_t snipe_scroll_y = scroll_y / divisor;
       int32_t temp = (int32_t)data->scroll_accumulator + snipe_scroll_y;
-      data->scroll_accumulator = CLAMP(temp, INT16_MIN, INT16_MAX);
+      if (temp > INT16_MAX) {
+        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
+        data->scroll_accumulator = INT16_MAX;
+      } else if (temp < INT16_MIN) {
+        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
+        data->scroll_accumulator = INT16_MIN;
+      } else {
+        data->scroll_accumulator = (int16_t)temp;
+      }
 
       // Use higher threshold for snipe mode
       uint8_t threshold = cfg->scroll_snipe_tick;
@@ -296,7 +320,15 @@ void paw32xx_motion_work_handler(struct k_work *work) {
       uint8_t divisor = MAX(1, cfg->scroll_snipe_divisor);
       int16_t snipe_scroll_y = scroll_y / divisor;
       int32_t temp = (int32_t)data->scroll_accumulator + snipe_scroll_y;
-      data->scroll_accumulator = CLAMP(temp, INT16_MIN, INT16_MAX);
+      if (temp > INT16_MAX) {
+        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
+        data->scroll_accumulator = INT16_MAX;
+      } else if (temp < INT16_MIN) {
+        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
+        data->scroll_accumulator = INT16_MIN;
+      } else {
+        data->scroll_accumulator = (int16_t)temp;
+      }
 
       // Use higher threshold for snipe mode
       uint8_t threshold = cfg->scroll_snipe_tick;

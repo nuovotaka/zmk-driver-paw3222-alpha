@@ -287,6 +287,8 @@ static int on_paw32xx_mode_binding_released(
     }
 }
 
+#if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
+
 static const struct behavior_driver_api behavior_paw32xx_mode_driver_api = {
     .locality = BEHAVIOR_LOCALITY_CENTRAL,
     .binding_pressed = on_paw32xx_mode_binding_pressed,
@@ -298,8 +300,6 @@ static const struct behavior_driver_api behavior_paw32xx_mode_driver_api = {
     .parameter_metadata = NULL,
 #endif
 };
-
-#if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 /**
  * @brief Initialize the PAW3222 mode behavior driver

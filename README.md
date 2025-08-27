@@ -46,7 +46,7 @@ The PAW3222 is a low-power optical mouse sensor suitable for tracking applicatio
 
 ## Installation
 
-1. Add as a ZMK module in your `west.yml`:
+- Add as a ZMK module in your `west.yml`:
 
 ```yaml
 manifest:
@@ -70,6 +70,9 @@ manifest:
 ## Device Tree Configuration
 
 Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`):
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
 
 ```dts
 &pinctrl {
@@ -123,6 +126,8 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
     };
 };
 ```
+
+</details>
 
 ---
 
@@ -209,6 +214,9 @@ Instead of using empty layers, you can use ZMK behaviors to switch input modes:
 
 ### Keymap Configuration
 
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
+
 ```dts
 / {
     behaviors {
@@ -238,7 +246,12 @@ Instead of using empty layers, you can use ZMK behaviors to switch input modes:
 };
 ```
 
+</details>
+
 ### Device Tree Configuration
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
 
 ```dts
 trackball: trackball@0 {
@@ -252,7 +265,12 @@ trackball: trackball@0 {
 };
 ```
 
+</details>
+
 ### Complete Example
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
 
 ```dts
 // In your .overlay file
@@ -298,6 +316,8 @@ trackball: trackball@0 {
     };
 };
 ```
+
+</details>
 
 ## Mode Switching Functions
 
@@ -360,6 +380,9 @@ Each side can have completely different settings by configuring separate PAW3222
 
 #### Left Side Configuration (left.overlay)
 
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
+
 ```dts
 &spi0 {
     trackball_left: trackball@0 {
@@ -377,7 +400,12 @@ Each side can have completely different settings by configuring separate PAW3222
 };
 ```
 
+</details>
+
 #### Right Side Configuration (right.overlay)
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
 
 ```dts
 &spi0 {
@@ -396,11 +424,16 @@ Each side can have completely different settings by configuring separate PAW3222
 };
 ```
 
+</details>
+
 ### Different Behavior Assignments
 
 You can assign different mode switching behaviors to each side:
 
 #### Left Side Keymap
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
 
 ```dts
 / {
@@ -418,7 +451,12 @@ You can assign different mode switching behaviors to each side:
 };
 ```
 
+</details>
+
 #### Right Side Keymap
+
+<details>
+<summary style="cursor:pointer; font-weight:bold;">Sample Code</summary>
 
 ```dts
 / {
@@ -435,6 +473,8 @@ You can assign different mode switching behaviors to each side:
     };
 };
 ```
+
+</details>
 
 ### Use Case Examples
 

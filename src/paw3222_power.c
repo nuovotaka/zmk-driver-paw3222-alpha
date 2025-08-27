@@ -94,11 +94,15 @@ int paw32xx_configure(const struct device *dev) {
     }
 
     if (cfg->snipe_divisor == 0) {
-        LOG_WRN("snipe_divisor is 0, may cause division by zero");
+        LOG_WRN("snipe_divisor is 0, setting to minimum value 1");
+        // Cast away const to fix invalid configuration
+        ((struct paw32xx_config*)cfg)->snipe_divisor = 1;
     }
 
     if (cfg->scroll_snipe_divisor == 0) {
-        LOG_WRN("scroll_snipe_divisor is 0, may cause division by zero");
+        LOG_WRN("scroll_snipe_divisor is 0, setting to minimum value 1");
+        // Cast away const to fix invalid configuration
+        ((struct paw32xx_config*)cfg)->scroll_snipe_divisor = 1;
     }
 
     ret = paw32xx_read_reg(dev, PAW32XX_PRODUCT_ID1, &val);
@@ -129,7 +133,9 @@ int paw32xx_configure(const struct device *dev) {
 
 #ifdef CONFIG_PM_DEVICE
 int paw32xx_pm_action(const struct device *dev, enum pm_device_action action) {
+#if DT_INST_NODE_HAS_PROP(0, power_gpios)
     const struct paw32xx_config *cfg = dev->config;
+#endif
     int ret;
     uint8_t val;
 
