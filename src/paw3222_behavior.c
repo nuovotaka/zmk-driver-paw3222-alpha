@@ -214,6 +214,8 @@ static int paw32xx_vertical_horizontal_toggle_mode(void)
     }
 }
 
+#if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
+
 /**
  * @brief Handle PAW3222 mode behavior key press events
  *
@@ -286,8 +288,6 @@ static int on_paw32xx_mode_binding_released(
             return 0;
     }
 }
-
-#if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 static const struct behavior_driver_api behavior_paw32xx_mode_driver_api = {
     .locality = BEHAVIOR_LOCALITY_CENTRAL,
