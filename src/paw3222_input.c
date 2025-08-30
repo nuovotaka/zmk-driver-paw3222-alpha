@@ -52,6 +52,55 @@ static inline int16_t abs_int16(int16_t value) {
   return (value < 0) ? -value : value;
 }
 
+/**
+ * @brief Safely add to scroll accumulator with overflow protection
+ *
+ * Adds a delta value to the scroll accumulator while preventing overflow.
+ * Clamps the result to INT16_MIN/INT16_MAX range and logs warnings on overflow.
+ *
+ * @param accumulator Pointer to the current accumulator value
+ * @param delta Delta value to add
+ * 
+ * @note Modifies the accumulator value in place
+ */
+static inline void add_to_scroll_accumulator(int16_t *accumulator, int16_t delta) {
+  int32_t temp = (int32_t)*accumulator + delta;
+  if (temp > INT16_MAX) {
+    LOG_WRN("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
+    *accumulator = INT16_MAX;
+  } else if (temp < INT16_MIN) {
+    LOG_WRN("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
+    *accumulator = INT16_MIN;
+  } else {
+    *accumulator = (int16_t)temp;
+  }
+}
+
+/**
+ * @brief Process scroll input and generate scroll events
+ *
+ * Accumulates scroll movement and generates scroll events when threshold is reached.
+ * Handles both vertical and horizontal scrolling based on the input type.
+ *
+ * @param dev Device pointer for input reporting
+ * @param accumulator Pointer to scroll accumulator
+ * @param scroll_delta Scroll movement delta
+ * @param threshold Threshold for triggering scroll events
+ * @param is_horizontal true for horizontal scroll, false for vertical
+ */
+static void process_scroll_input(const struct device *dev, int16_t *accumulator, 
+                                int16_t scroll_delta, uint8_t threshold, bool is_horizontal) {
+  add_to_scroll_accumulator(accumulator, scroll_delta);
+  
+  if (abs_int16(*accumulator) >= threshold) {
+    int16_t scroll_direction = (*accumulator > 0) ? 1 : -1;
+    uint16_t input_code = is_horizontal ? INPUT_REL_HWHEEL : INPUT_REL_WHEEL;
+    
+    input_report_rel(dev, input_code, scroll_direction, true, K_FOREVER);
+    *accumulator -= scroll_direction * threshold;
+  }
+}
+
 enum paw32xx_input_mode
 get_input_mode_for_current_layer(const struct device *dev) {
   const struct paw32xx_config *cfg = dev->config;
@@ -239,105 +288,23 @@ void paw32xx_motion_work_handler(struct k_work *work) {
     break;
   }
   case PAW32XX_SCROLL: // Vertical scroll
-    // Accumulate scroll movement for smoother scrolling (with overflow
-    // protection)
-    {
-      int32_t temp = (int32_t)data->scroll_accumulator + scroll_y;
-      if (temp > INT16_MAX) {
-        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
-        data->scroll_accumulator = INT16_MAX;
-      } else if (temp < INT16_MIN) {
-        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
-        data->scroll_accumulator = INT16_MIN;
-      } else {
-        data->scroll_accumulator = (int16_t)temp;
-      }
-
-      // Send scroll event when accumulator exceeds threshold
-      if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
-        int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
-        input_report_rel(data->dev, INPUT_REL_WHEEL, scroll_direction, true,
-                         K_FOREVER);
-        data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
-      }
-    }
+    process_scroll_input(data->dev, &data->scroll_accumulator, scroll_y, cfg->scroll_tick, false);
     break;
   case PAW32XX_SCROLL_HORIZONTAL: // Horizontal scroll
-    // Accumulate scroll movement for smoother scrolling (with overflow
-    // protection)
-    {
-      int32_t temp = (int32_t)data->scroll_accumulator + scroll_y;
-      if (temp > INT16_MAX) {
-        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
-        data->scroll_accumulator = INT16_MAX;
-      } else if (temp < INT16_MIN) {
-        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
-        data->scroll_accumulator = INT16_MIN;
-      } else {
-        data->scroll_accumulator = (int16_t)temp;
-      }
-
-      // Send scroll event when accumulator exceeds threshold
-      if (abs_int16(data->scroll_accumulator) >= cfg->scroll_tick) {
-        int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
-        input_report_rel(data->dev, INPUT_REL_HWHEEL, scroll_direction, true,
-                         K_FOREVER);
-        data->scroll_accumulator -= scroll_direction * cfg->scroll_tick;
-      }
-    }
+    process_scroll_input(data->dev, &data->scroll_accumulator, scroll_y, cfg->scroll_tick, true);
     break;
   case PAW32XX_SCROLL_SNIPE: // High-precision vertical scroll
-    // Apply precision scaling and use higher threshold for ultra-precision
-    // scrolling
     {
       uint8_t divisor = MAX(1, cfg->scroll_snipe_divisor);
       int16_t snipe_scroll_y = scroll_y / divisor;
-      int32_t temp = (int32_t)data->scroll_accumulator + snipe_scroll_y;
-      if (temp > INT16_MAX) {
-        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
-        data->scroll_accumulator = INT16_MAX;
-      } else if (temp < INT16_MIN) {
-        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
-        data->scroll_accumulator = INT16_MIN;
-      } else {
-        data->scroll_accumulator = (int16_t)temp;
-      }
-
-      // Use higher threshold for snipe mode
-      uint8_t threshold = cfg->scroll_snipe_tick;
-      if (abs_int16(data->scroll_accumulator) >= threshold) {
-        int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
-        input_report_rel(data->dev, INPUT_REL_WHEEL, scroll_direction, true,
-                         K_FOREVER);
-        data->scroll_accumulator -= scroll_direction * threshold;
-      }
+      process_scroll_input(data->dev, &data->scroll_accumulator, snipe_scroll_y, cfg->scroll_snipe_tick, false);
     }
     break;
   case PAW32XX_SCROLL_HORIZONTAL_SNIPE: // High-precision horizontal scroll
-    // Apply precision scaling and use higher threshold for ultra-precision
-    // scrolling
     {
       uint8_t divisor = MAX(1, cfg->scroll_snipe_divisor);
       int16_t snipe_scroll_y = scroll_y / divisor;
-      int32_t temp = (int32_t)data->scroll_accumulator + snipe_scroll_y;
-      if (temp > INT16_MAX) {
-        LOG_DBG("Scroll accumulator overflow: %d, clamped to %d", temp, INT16_MAX);
-        data->scroll_accumulator = INT16_MAX;
-      } else if (temp < INT16_MIN) {
-        LOG_DBG("Scroll accumulator underflow: %d, clamped to %d", temp, INT16_MIN);
-        data->scroll_accumulator = INT16_MIN;
-      } else {
-        data->scroll_accumulator = (int16_t)temp;
-      }
-
-      // Use higher threshold for snipe mode
-      uint8_t threshold = cfg->scroll_snipe_tick;
-      if (abs_int16(data->scroll_accumulator) >= threshold) {
-        int16_t scroll_direction = (data->scroll_accumulator > 0) ? 1 : -1;
-        input_report_rel(data->dev, INPUT_REL_HWHEEL, scroll_direction, true,
-                         K_FOREVER);
-        data->scroll_accumulator -= scroll_direction * threshold;
-      }
+      process_scroll_input(data->dev, &data->scroll_accumulator, snipe_scroll_y, cfg->scroll_snipe_tick, true);
     }
     break;
 
