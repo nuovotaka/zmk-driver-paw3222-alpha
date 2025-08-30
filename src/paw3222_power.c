@@ -94,15 +94,13 @@ int paw32xx_configure(const struct device *dev) {
     }
 
     if (cfg->snipe_divisor == 0) {
-        LOG_WRN("snipe_divisor is 0, setting to minimum value 1");
-        // Cast away const to fix invalid configuration
-        ((struct paw32xx_config*)cfg)->snipe_divisor = 1;
+        LOG_ERR("snipe_divisor is 0, this is invalid configuration");
+        return -EINVAL;
     }
 
     if (cfg->scroll_snipe_divisor == 0) {
-        LOG_WRN("scroll_snipe_divisor is 0, setting to minimum value 1");
-        // Cast away const to fix invalid configuration
-        ((struct paw32xx_config*)cfg)->scroll_snipe_divisor = 1;
+        LOG_ERR("scroll_snipe_divisor is 0, this is invalid configuration");
+        return -EINVAL;
     }
 
     ret = paw32xx_read_reg(dev, PAW32XX_PRODUCT_ID1, &val);

@@ -22,6 +22,7 @@ LOG_MODULE_REGISTER(paw32xx_behavior, CONFIG_ZMK_LOG_LEVEL);
 #define DT_DRV_COMPAT paw32xx_mode
 
 // Global pointer to the PAW3222 device (set during init)
+// Note: Currently supports only one device instance
 static const struct device *paw3222_dev = NULL;
 
 /**
@@ -38,9 +39,14 @@ static const struct device *paw3222_dev = NULL;
  * 
  * @warning Only supports a single PAW3222 device instance when using behaviors.
  *          Multiple devices would overwrite the global reference.
+ *          For split keyboards with multiple PAW3222 devices, use layer-based
+ *          switching instead of behavior-based switching.
  */
 void paw32xx_set_device_reference(const struct device *dev)
 {
+    if (paw3222_dev != NULL) {
+        LOG_WRN("PAW3222 device reference already set, overwriting. Multiple devices not fully supported.");
+    }
     paw3222_dev = dev;
 }
 

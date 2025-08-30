@@ -127,11 +127,9 @@ int paw32xx_read_xy(const struct device *dev, int16_t *x, int16_t *y) {
         return ret;
     }
 
-    *x = rx_data[1];
-    *y = rx_data[3];
-
-    *x = sign_extend(*x, PAW32XX_DATA_SIZE_BITS - 1);
-    *y = sign_extend(*y, PAW32XX_DATA_SIZE_BITS - 1);
+    // Apply sign extension directly to the 8-bit values
+    *x = sign_extend(rx_data[1], PAW32XX_DATA_SIZE_BITS - 1);
+    *y = sign_extend(rx_data[3], PAW32XX_DATA_SIZE_BITS - 1);
 
     return 0;
 }

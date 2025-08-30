@@ -56,7 +56,7 @@ static int paw32xx_init(const struct device *dev)
   struct paw32xx_data *data = dev->data;
   int ret;
 
-  data->current_cpi = 0;                  // Initialize to 0 to ensure CPI change detection
+  data->current_cpi = -1;                 // Initialize to invalid value to ensure CPI is set on first use
   data->scroll_accumulator = 0;           // Initialize scroll accumulator
   data->current_mode = PAW32XX_MODE_MOVE; // Initialize to move mode
   data->mode_toggle_state = false;
