@@ -137,7 +137,7 @@ Configure the sensor in your shield or board config file (`.overlay` or `.dtsi`)
 | ------------------------------ | ------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | irq-gpios                      | phandle-array | Yes      | GPIO connected to the motion pin, active low.                                                                                                                        |
 | power-gpios                    | phandle-array | No       | GPIO connected to the power control pin.                                                                                                                             |
-| res-cpi                        | int           | No       | CPI resolution for the sensor. Can also be changed at runtime using the `paw32xx_set_resolution()` API.                                                              |
+| res-cpi                        | int           | No       | CPI resolution for the sensor (608-4826). Can also be changed at runtime using the `paw32xx_set_resolution()` API.                                                   |
 | force-awake                    | boolean       | No       | Initialize the sensor in "force awake" mode. Can also be enabled/disabled at runtime via the `paw32xx_force_awake()` API.                                            |
 | rotation                       | int           | No       | Physical rotation of the sensor in degrees. (0, 90, 180, 270). Used for scroll direction mapping. For cursor movement, use input-processors like `zip_xy_transform`. |
 | scroll-tick                    | int           | No       | Threshold for scroll movement (delta value above which scroll is triggered). Used by normal scroll and horizontal scroll modes only.                                 |
@@ -197,6 +197,8 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
 ```
 
 - Changes sensor resolution at runtime.
+- Supported CPI range: 608-4826 (hardware limitation)
+- CPI values are in steps of 38
 
 ### Force Awake Mode
 
