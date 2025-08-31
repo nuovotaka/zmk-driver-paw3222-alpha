@@ -131,7 +131,7 @@ manifest:
 | ------------------------------ | ------------- | ---- | ---------------------------------------------------------- |
 | irq-gpios                      | phandle-array | Yes  | モーションピンに接続された GPIO（アクティブ Low）          |
 | power-gpios                    | phandle-array | No   | 電源制御ピンに接続された GPIO                              |
-| res-cpi                        | int           | No   | センサーの CPI 解像度（API で実行時変更可）                |
+| res-cpi                        | int           | No   | センサーの CPI 解像度（608-4826、API で実行時変更可）      |
 | force-awake                    | boolean       | No   | "force awake"モードで初期化（API で実行時変更可）          |
 | rotation                       | int           | No   | センサーの角度を設定 (0, 90, 180, 270)                     |
 | scroll-tick                    | int           | No   | スクロール感度の閾値を設定                                 |
@@ -191,6 +191,8 @@ int paw32xx_set_resolution(const struct device *dev, uint16_t res_cpi);
 ```
 
 - 実行時にセンサー解像度を変更します。
+- サポートされる CPI 範囲: 608-4826（ハードウェア制限）
+- CPI 値は 38 ステップ単位
 
 ### Force Awake モード
 
